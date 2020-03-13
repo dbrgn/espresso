@@ -1,0 +1,25 @@
+[package]
+name = "espresso"
+description = "AT based driver crate for ESP8266 WiFi modules"
+version = "0.1.0"
+authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+edition = "2018"
+
+[dependencies]
+atat = { path = "../atat/atat" }
+heapless = "0.5"
+
+[dev-dependencies]
+embedded-hal = "0.2"
+env_logger = "0.6"
+log = "0.4"
+nb = "0.1"
+serialport = { path = "../serialport-rs", features = ["embedded"] }
+void = "1"
+
+[features]
+logging = ["atat/logging"]
+
+[[example]]
+name = "linux"
+required-features = ["logging"]
