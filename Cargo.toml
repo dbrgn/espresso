@@ -1,8 +1,11 @@
 [package]
 name = "espresso"
 description = "AT based driver crate for ESP8266 WiFi modules"
+homepage = "https://github.com/dbrgn/espresso/"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
 edition = "2018"
 
 [dependencies]
