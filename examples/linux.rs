@@ -52,7 +52,8 @@ fn main() {
                 Ok(0) => {}
                 Ok(bytes_read) => {
                     ingress.write(&buffer[0..bytes_read]);
-                    ingress.parse_at();
+                    ingress.digest();
+                    ingress.digest();
                 }
                 Err(e) => match e.kind() {
                     io::ErrorKind::Interrupted => {}

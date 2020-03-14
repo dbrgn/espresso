@@ -1,6 +1,12 @@
 use atat::{AtatCmd, AtatResp};
 use heapless::String;
 
+/// An AT test command.
+///
+/// You will get an [`EmptyResponse`][EmptyResponse] if communication works
+/// correctly.
+///
+/// [EmptyResponse]: struct.EmptyResponse.html
 #[derive(Debug)]
 pub struct At;
 
@@ -13,16 +19,21 @@ impl AtatCmd for At {
     }
 
     fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
-        println!("At: parse({:?})", resp);
-        Ok(EmptyResponse)
+        if !resp.trim().is_empty() {
+            Err(atat::Error::InvalidResponse)
+        } else {
+            Ok(EmptyResponse)
+        }
     }
 }
 
+/// An empty response, no body.
 #[derive(Debug)]
 pub struct EmptyResponse;
 
 impl AtatResp for EmptyResponse { }
 
+/// Return information about the firmware version.
 #[derive(Debug)]
 pub struct GetFirmwareVersion;
 
@@ -66,6 +77,7 @@ impl AtatCmd for GetFirmwareVersion {
     }
 }
 
+/// Firmware version.
 #[derive(Debug)]
 pub struct FirmwareVersion {
     at_version: heapless::String<heapless::consts::U32>,
