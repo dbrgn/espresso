@@ -1,6 +1,7 @@
 use atat::{AtatCmd, AtatResp};
 use heapless::String;
 
+#[derive(Debug)]
 pub struct At;
 
 impl AtatCmd for At {
@@ -22,6 +23,7 @@ pub struct EmptyResponse;
 
 impl AtatResp for EmptyResponse { }
 
+#[derive(Debug)]
 pub struct GetFirmwareVersion;
 
 impl AtatCmd for GetFirmwareVersion {

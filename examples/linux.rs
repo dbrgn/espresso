@@ -64,7 +64,9 @@ fn main() {
         })
         .unwrap();
 
-    println!("Sending: {:?}", client.send(&commands::At));
+    let cmd = commands::At;
+    println!("Sending command {:?}", cmd);
+    println!("Result: {:?}", client.send(&cmd));
 }
 
 mod timer {
