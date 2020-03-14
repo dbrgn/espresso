@@ -3,7 +3,7 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
-use atat::ATATInterface;
+use atat::AtatClient;
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
 
 use espresso::commands;

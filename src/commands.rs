@@ -1,13 +1,13 @@
-use atat::{ATATCmd, ATATResp};
+use atat::{AtatCmd, AtatResp};
 use heapless::String;
 
 pub struct At;
 
-impl ATATCmd for At {
+impl AtatCmd for At {
     type CommandLen = heapless::consts::U4;
     type Response = EmptyResponse;
 
-    fn as_str(&self) -> String<Self::CommandLen> {
+    fn as_string(&self) -> String<Self::CommandLen> {
         String::from("AT\r\n")
     }
 
@@ -20,15 +20,15 @@ impl ATATCmd for At {
 #[derive(Debug)]
 pub struct EmptyResponse;
 
-impl ATATResp for EmptyResponse { }
+impl AtatResp for EmptyResponse { }
 
 pub struct GetFirmwareVersion;
 
-impl ATATCmd for GetFirmwareVersion {
+impl AtatCmd for GetFirmwareVersion {
     type CommandLen = heapless::consts::U8;
     type Response = FirmwareVersion;
 
-    fn as_str(&self) -> String<Self::CommandLen> {
+    fn as_string(&self) -> String<Self::CommandLen> {
         String::from("AT+GMR\r\n")
     }
 
@@ -41,4 +41,4 @@ impl ATATCmd for GetFirmwareVersion {
 #[derive(Debug)]
 pub struct FirmwareVersion(heapless::String<heapless::consts::U256>);
 
-impl ATATResp for FirmwareVersion { }
+impl AtatResp for FirmwareVersion { }
