@@ -56,7 +56,11 @@ fn main() {
                     ingress.digest();
                 }
                 Err(e) => match e.kind() {
-                    io::ErrorKind::Interrupted => {}
+                    io::ErrorKind::WouldBlock
+                    | io::ErrorKind::TimedOut
+                    | io::ErrorKind::Interrupted => {
+                        // Ignore
+                    }
                     _ => {
                         log::error!("Serial reading thread error while reading: {}", e);
                     }
@@ -65,9 +69,14 @@ fn main() {
         })
         .unwrap();
 
-    let cmd = commands::At;
-    println!("Sending command {:?}", cmd);
-    println!("Result: {:?}", client.send(&cmd));
+    println!("AT: {:?}", client.send(&commands::requests::At));
+    println!(
+        "AT+GMR: {:?}",
+        client.send(&commands::requests::GetFirmwareVersion)
+    );
+    println!("AT+RST: {:?}", client.send(&commands::requests::Restart));
+
+    loop {}
 }
 
 mod timer {

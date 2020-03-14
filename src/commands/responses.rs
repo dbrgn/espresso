@@ -19,3 +19,9 @@ pub struct FirmwareVersion {
 }
 
 impl AtatResp for FirmwareVersion {}
+
+/// Generic string response.
+#[derive(Debug)]
+pub struct StringResponse<L: heapless::ArrayLength<u8>>(pub(crate) String<L>);
+
+impl<L: heapless::ArrayLength<u8>> AtatResp for StringResponse<L> {}
