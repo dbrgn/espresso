@@ -1,18 +1,22 @@
-use atat::{AtatCmd, AtatResp};
+//! Requests that can be sent from the driver to the ESP8266 device.
+
+use atat::AtatCmd;
 use heapless::String;
+
+use crate::commands::responses;
 
 /// An AT test command.
 ///
 /// You will get an [`EmptyResponse`][EmptyResponse] if communication works
 /// correctly.
 ///
-/// [EmptyResponse]: struct.EmptyResponse.html
+/// [EmptyResponse]: ../responses/struct.EmptyResponse.html
 #[derive(Debug)]
 pub struct At;
 
 impl AtatCmd for At {
     type CommandLen = heapless::consts::U4;
-    type Response = EmptyResponse;
+    type Response = responses::EmptyResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
         String::from("AT\r\n")
@@ -22,16 +26,10 @@ impl AtatCmd for At {
         if !resp.trim().is_empty() {
             Err(atat::Error::InvalidResponse)
         } else {
-            Ok(EmptyResponse)
+            Ok(responses::EmptyResponse)
         }
     }
 }
-
-/// An empty response, no body.
-#[derive(Debug)]
-pub struct EmptyResponse;
-
-impl AtatResp for EmptyResponse { }
 
 /// Return information about the firmware version.
 #[derive(Debug)]
@@ -39,7 +37,7 @@ pub struct GetFirmwareVersion;
 
 impl AtatCmd for GetFirmwareVersion {
     type CommandLen = heapless::consts::U8;
-    type Response = FirmwareVersion;
+    type Response = responses::FirmwareVersion;
 
     fn as_string(&self) -> String<Self::CommandLen> {
         String::from("AT+GMR\r\n")
@@ -69,20 +67,10 @@ impl AtatCmd for GetFirmwareVersion {
         }
         let compile_time = &compile_time_raw[13..];
 
-        Ok(FirmwareVersion {
+        Ok(responses::FirmwareVersion {
             at_version: String::from(at_version),
             sdk_version: String::from(sdk_version),
             compile_time: String::from(compile_time),
         })
     }
 }
-
-/// Firmware version.
-#[derive(Debug)]
-pub struct FirmwareVersion {
-    at_version: heapless::String<heapless::consts::U32>,
-    sdk_version: heapless::String<heapless::consts::U32>,
-    compile_time: heapless::String<heapless::consts::U32>,
-}
-
-impl AtatResp for FirmwareVersion { }
