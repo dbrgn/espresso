@@ -74,7 +74,7 @@ fn main() {
         "AT+GMR: {:?}",
         client.send(&commands::requests::GetFirmwareVersion)
     );
-    println!("AT+RST: {:?}", client.send(&commands::requests::Restart));
+    println!("Wifi mode: {:?}", client.send(&commands::requests::QueryWifiMode));
 
     loop {}
 }

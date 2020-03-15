@@ -92,3 +92,28 @@ impl AtatCmd for Restart {
         Ok(responses::StringResponse(String::from(resp)))
     }
 }
+
+/// Query the current WiFi mode.
+#[derive(Debug)]
+pub struct QueryWifiMode;
+
+impl AtatCmd for QueryWifiMode {
+    type CommandLen = heapless::consts::U12;
+    type Response = responses::WifiMode;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CWMODE?\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        if !resp.starts_with("+CWMODE:") {
+            return Err(atat::Error::InvalidResponse);
+        }
+        match resp.get(8..9) {
+            Some("1") => Ok(responses::WifiMode::Station),
+            Some("2") => Ok(responses::WifiMode::Ap),
+            Some("3") => Ok(responses::WifiMode::Both),
+            _ => Err(atat::Error::InvalidResponse),
+        }
+    }
+}

@@ -25,3 +25,16 @@ impl AtatResp for FirmwareVersion {}
 pub struct StringResponse<L: heapless::ArrayLength<u8>>(pub(crate) String<L>);
 
 impl<L: heapless::ArrayLength<u8>> AtatResp for StringResponse<L> {}
+
+/// The WiFi mode.
+#[derive(Debug)]
+pub enum WifiMode {
+    /// Station mode (client)
+    Station,
+    /// Access point mode (server)
+    Ap,
+    /// Both station and AP mode
+    Both,
+}
+
+impl AtatResp for WifiMode {}
