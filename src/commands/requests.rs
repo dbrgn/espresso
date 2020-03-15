@@ -81,15 +81,18 @@ pub struct Restart;
 
 impl AtatCmd for Restart {
     type CommandLen = heapless::consts::U8;
-    type Response = responses::StringResponse<heapless::consts::U256>;
+    type Response = responses::EmptyResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
         String::from("AT+RST\r\n")
     }
 
     fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
-        println!("Parse: {:?}", resp);
-        Ok(responses::StringResponse(String::from(resp)))
+        if !resp.trim().is_empty() {
+            Err(atat::Error::InvalidResponse)
+        } else {
+            Ok(responses::EmptyResponse)
+        }
     }
 }
 
