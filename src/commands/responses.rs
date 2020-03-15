@@ -29,3 +29,12 @@ pub struct StringResponse<L: heapless::ArrayLength<u8>>(pub(crate) String<L>);
 impl<L: heapless::ArrayLength<u8>> AtatResp for StringResponse<L> {}
 
 impl AtatResp for types::WifiMode {}
+
+/// AP join result.
+#[derive(Debug)]
+pub struct JoinResponse {
+    pub connected: bool,
+    pub got_ip: bool,
+}
+
+impl AtatResp for JoinResponse {}

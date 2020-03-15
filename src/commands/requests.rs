@@ -161,7 +161,7 @@ pub struct SetWifiMode {
 
 impl SetWifiMode {
     pub fn to(mode: types::WifiMode, persistent: bool) -> Self {
-        Self{ mode, persistent }
+        Self { mode, persistent }
     }
 }
 
@@ -189,7 +189,7 @@ impl AtatCmd for SetWifiMode {
     }
 }
 
-/// Query available APs.
+/// Query available Access Points.
 #[derive(Debug)]
 pub struct ListAccessPoints;
 
@@ -209,5 +209,72 @@ impl AtatCmd for ListAccessPoints {
 
     fn max_timeout_ms(&self) -> u32 {
         10_000
+    }
+}
+
+/// Join an Access Point.
+///
+/// If `persistent` is set to `true`, then the credentials will be persisted to
+/// flash.
+#[derive(Debug)]
+pub struct JoinAccessPoint {
+    ssid: String<heapless::consts::U32>,
+    psk: String<heapless::consts::U64>,
+    persistent: bool,
+}
+
+impl JoinAccessPoint {
+    pub fn new(
+        ssid: impl Into<String<heapless::consts::U32>>,
+        psk: impl Into<String<heapless::consts::U64>>,
+        persistent: bool,
+    ) -> Self {
+        Self {
+            ssid: ssid.into(),
+            psk: psk.into(),
+            persistent,
+        }
+    }
+}
+
+impl AtatCmd for JoinAccessPoint {
+    type CommandLen = heapless::consts::U116;
+    type Response = responses::JoinResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        let mut string = String::from(match self.persistent {
+            true => "AT+CWJAP_DEF=",
+            false => "AT+CWJAP_CUR=",
+        });
+        // TODO: Proper quoting
+        string.push_str("\"").unwrap();
+        string.push_str(self.ssid.as_str()).unwrap();
+        string.push_str("\",\"").unwrap();
+        string.push_str(self.psk.as_str()).unwrap();
+        string.push_str("\"").unwrap();
+        string.push_str("\r\n").unwrap();
+        string
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        println!("Parse: {:?}", resp);
+        let mut response = responses::JoinResponse {
+            connected: false,
+            got_ip: false,
+        };
+        for line in resp.lines() {
+            match line {
+                "WIFI DISCONNECTED" => response.connected = false,
+                "WIFI CONNECTED" => response.connected = true,
+                "WIFI GOT IP" => response.got_ip = true,
+                _ => { /* throw away unknown lines for now */ }
+            }
+        }
+        Ok(response)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        // From experiments, it seems that a timeout is returned after ~15s
+        25_000
     }
 }
