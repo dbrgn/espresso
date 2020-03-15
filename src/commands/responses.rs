@@ -4,6 +4,8 @@ use atat::AtatResp;
 use heapless::consts::U32;
 use heapless::String;
 
+use crate::types;
+
 /// An empty response, no body.
 #[derive(Debug)]
 pub struct EmptyResponse;
@@ -26,15 +28,4 @@ pub struct StringResponse<L: heapless::ArrayLength<u8>>(pub(crate) String<L>);
 
 impl<L: heapless::ArrayLength<u8>> AtatResp for StringResponse<L> {}
 
-/// The WiFi mode.
-#[derive(Debug)]
-pub enum WifiMode {
-    /// Station mode (client)
-    Station,
-    /// Access point mode (server)
-    Ap,
-    /// Both station and AP mode
-    Both,
-}
-
-impl AtatResp for WifiMode {}
+impl AtatResp for types::WifiMode {}

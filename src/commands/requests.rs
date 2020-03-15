@@ -4,6 +4,7 @@ use atat::AtatCmd;
 use heapless::String;
 
 use crate::commands::responses;
+use crate::types;
 
 /// An AT test command.
 ///
@@ -98,25 +99,92 @@ impl AtatCmd for Restart {
 
 /// Query the current WiFi mode.
 #[derive(Debug)]
-pub struct QueryWifiMode;
+pub struct GetCurrentWifiMode;
 
-impl AtatCmd for QueryWifiMode {
-    type CommandLen = heapless::consts::U12;
-    type Response = responses::WifiMode;
+impl AtatCmd for GetCurrentWifiMode {
+    type CommandLen = heapless::consts::U16;
+    type Response = types::WifiMode;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        String::from("AT+CWMODE?\r\n")
+        String::from("AT+CWMODE_CUR?\r\n")
     }
 
     fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
-        if !resp.starts_with("+CWMODE:") {
+        if !resp.starts_with("+CWMODE_CUR:") {
             return Err(atat::Error::InvalidResponse);
         }
-        match resp.get(8..9) {
-            Some("1") => Ok(responses::WifiMode::Station),
-            Some("2") => Ok(responses::WifiMode::Ap),
-            Some("3") => Ok(responses::WifiMode::Both),
+        match resp.get(12..13) {
+            Some("1") => Ok(types::WifiMode::Station),
+            Some("2") => Ok(types::WifiMode::Ap),
+            Some("3") => Ok(types::WifiMode::Both),
             _ => Err(atat::Error::InvalidResponse),
+        }
+    }
+}
+
+/// Query the default WiFi mode.
+///
+/// TODO: Either merge this with `GetCurrentWifiMode`, or use macro to generate.
+#[derive(Debug)]
+pub struct GetDefaultWifiMode;
+
+impl AtatCmd for GetDefaultWifiMode {
+    type CommandLen = heapless::consts::U16;
+    type Response = types::WifiMode;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CWMODE_DEF?\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        if !resp.starts_with("+CWMODE_DEF:") {
+            return Err(atat::Error::InvalidResponse);
+        }
+        match resp.get(12..13) {
+            Some("1") => Ok(types::WifiMode::Station),
+            Some("2") => Ok(types::WifiMode::Ap),
+            Some("3") => Ok(types::WifiMode::Both),
+            _ => Err(atat::Error::InvalidResponse),
+        }
+    }
+}
+
+/// Set the WiFi mode.
+///
+/// If `persistent` is set to `true`, then the configuration will be persisted
+/// to flash.
+#[derive(Debug)]
+pub struct SetWifiMode {
+    mode: types::WifiMode,
+    persistent: bool,
+}
+
+impl SetWifiMode {
+    pub fn to(mode: types::WifiMode, persistent: bool) -> Self {
+        Self{ mode, persistent }
+    }
+}
+
+impl AtatCmd for SetWifiMode {
+    type CommandLen = heapless::consts::U17;
+    type Response = responses::EmptyResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        let mut string = String::from(match self.persistent {
+            true => "AT+CWMODE_DEF=",
+            false => "AT+CWMODE_CUR=",
+        });
+        string.push_str(self.mode.as_at_str()).unwrap();
+        string.push_str("\r\n").unwrap();
+        string
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        // TODO: This code is used a lot, move it into helper function
+        if !resp.trim().is_empty() {
+            Err(atat::Error::InvalidResponse)
+        } else {
+            Ok(responses::EmptyResponse)
         }
     }
 }

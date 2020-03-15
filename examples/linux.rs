@@ -6,7 +6,7 @@ use std::time::Duration;
 use atat::AtatClient;
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
 
-use espresso::commands;
+use espresso::{commands, types::WifiMode};
 
 fn main() {
     env_logger::init();
@@ -30,7 +30,7 @@ fn main() {
         flow_control: FlowControl::None,
         parity: Parity::None,
         stop_bits: StopBits::One,
-        timeout: Duration::from_millis(1000),
+        timeout: Duration::from_millis(5000),
     };
 
     // Open serial port
@@ -74,7 +74,33 @@ fn main() {
         "AT+GMR: {:?}",
         client.send(&commands::requests::GetFirmwareVersion)
     );
-    println!("Wifi mode: {:?}", client.send(&commands::requests::QueryWifiMode));
+
+    println!(
+        "Wifi mode:\n  Current: {:?}\n  Default: {:?}",
+        client.send(&commands::requests::GetCurrentWifiMode).expect("Could not get current wifi mode"),
+        client.send(&commands::requests::GetDefaultWifiMode).expect("Could not get default wifi mode"),
+    );
+
+    print!("Setting current Wifi mode to AP...");
+    client.send(&commands::requests::SetWifiMode::to(WifiMode::Ap, false))
+        .expect("Could not set current wifi mode");
+    println!("OK");
+
+    println!(
+        "Wifi mode:\n  Current: {:?}\n  Default: {:?}",
+        client.send(&commands::requests::GetCurrentWifiMode).expect("Could not get current wifi mode"),
+        client.send(&commands::requests::GetDefaultWifiMode).expect("Could not get default wifi mode"),
+    );
+
+    print!("Restart module...");
+    client.send(&commands::requests::Restart).expect("Could not restart");
+    println!("OK");
+
+    println!(
+        "Wifi mode:\n  Current: {:?}\n  Default: {:?}",
+        client.send(&commands::requests::GetCurrentWifiMode).expect("Could not get current wifi mode"),
+        client.send(&commands::requests::GetDefaultWifiMode).expect("Could not get default wifi mode"),
+    );
 
     loop {}
 }
