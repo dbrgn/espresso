@@ -309,6 +309,41 @@ impl AtatCmd for GetConnectionStatus {
     }
 }
 
+/// Query the local IP and MAC addresses.
+#[derive(Debug)]
+pub struct GetLocalAddress;
+
+impl AtatCmd for GetLocalAddress {
+    type CommandLen = heapless::consts::U10;
+    type Response = responses::LocalAddress;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CIFSR\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        // Example: +CIFSR:STAIP,"10.0.99.164"\r\n+CIFSR:STAMAC,"dc:4f:22:7e:41:b4"
+        let mut mac = None;
+        let mut ip = None;
+        for line in resp.lines() {
+            if line.starts_with("+CIFSR:STAIP,") {
+                let ip_raw = &line[14..line.len() - 1];
+                ip = if ip_raw == "0.0.0.0" {
+                    None
+                } else {
+                    Some(ip_raw.parse().map_err(|_| atat::Error::ParseString)?)
+                };
+            } else if line.starts_with("+CIFSR:STAMAC,") {
+                mac = Some(String::from(&line[15..32]));
+            }
+        }
+        Ok(responses::LocalAddress {
+            ip,
+            mac: mac.ok_or(atat::Error::ParseString)?,
+        })
+    }
+}
+
 /// Establish TCP Connection, UDP Transmission or SSL Connection.
 #[derive(Debug)]
 pub struct EstablishConnection {
@@ -388,37 +423,94 @@ impl AtatCmd for EstablishConnection {
     }
 }
 
-/// Query the local IP and MAC addresses.
+/// Prepare to send `length` bytes of data.
+///
+/// This message MUST be followed by a `SendData` message.
 #[derive(Debug)]
-pub struct GetLocalAddress;
+pub struct PrepareSendData {
+    mux: types::MultiplexingType,
+    length: u16,
+}
 
-impl AtatCmd for GetLocalAddress {
-    type CommandLen = heapless::consts::U10;
-    type Response = responses::LocalAddress;
+impl PrepareSendData {
+    pub fn new(mux: types::MultiplexingType, length: u16) -> Self {
+        Self { mux, length }
+    }
+}
+
+impl AtatCmd for PrepareSendData {
+    type CommandLen = heapless::consts::U20;
+    type Response = responses::EmptyResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        String::from("AT+CIFSR\r\n")
+        let mut string = String::from("AT+CIPSEND=");
+        match self.mux {
+            types::MultiplexingType::NonMultiplexed => {}
+            types::MultiplexingType::Multiplexed(ref id) => {
+                string.push_str(id.as_at_str()).unwrap();
+                string.push(',').unwrap();
+            }
+        }
+        {
+            // Length can only be in the range 0-65535
+            let mut buf = [0; 5];
+            string
+                .push_str(self.length.numtoa_str(10, &mut buf))
+                .unwrap();
+        }
+        string.push_str("\r\n").unwrap();
+        string
+    }
+
+    fn parse(&self, _resp: &str) -> Result<Self::Response, atat::Error> {
+        Ok(responses::EmptyResponse)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        5_000
+    }
+}
+
+/// Send data.
+///
+/// This message MUST directly follow by a `PrepareSendData` message.
+///
+/// The type argument `L` must be at least as large as the data length.
+#[derive(Debug)]
+pub struct SendData<'a, L> {
+    data: &'a str,
+    length: core::marker::PhantomData<L>,
+}
+
+impl<'a, L> SendData<'a, L>
+where
+    L: heapless::ArrayLength<u8>,
+{
+    pub fn new(data: &'a str) -> Self {
+        Self {
+            data,
+            length: core::marker::PhantomData,
+        }
+    }
+}
+
+impl<'a, L> AtatCmd for SendData<'a, L>
+where
+    L: heapless::ArrayLength<u8>,
+{
+    type CommandLen = L;
+    type Response = responses::EmptyResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from(self.data)
     }
 
     fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
-        // Example: +CIFSR:STAIP,"10.0.99.164"\r\n+CIFSR:STAMAC,"dc:4f:22:7e:41:b4"
-        let mut mac = None;
-        let mut ip = None;
-        for line in resp.lines() {
-            if line.starts_with("+CIFSR:STAIP,") {
-                let ip_raw = &line[14..line.len() - 1];
-                ip = if ip_raw == "0.0.0.0" {
-                    None
-                } else {
-                    Some(ip_raw.parse().map_err(|_| atat::Error::ParseString)?)
-                };
-            } else if line.starts_with("+CIFSR:STAMAC,") {
-                mac = Some(String::from(&line[15..32]));
-            }
-        }
-        Ok(responses::LocalAddress {
-            ip,
-            mac: mac.ok_or(atat::Error::ParseString)?,
-        })
+        println!("Parse: {:?}", resp);
+        Ok(responses::EmptyResponse)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        30_000
     }
 }

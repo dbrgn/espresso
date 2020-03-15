@@ -1,8 +1,10 @@
+use std::convert::TryInto;
 use std::env;
 use std::io;
 use std::thread;
 use std::time::Duration;
 
+use espresso::commands::requests;
 use espresso::types::{ConnectionStatus, MultiplexingType, WifiMode};
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
@@ -104,7 +106,9 @@ fn main() {
         .get_connection_status()
         .expect("Could not get connection status");
     println!("Connection status: {:?}", status);
-    let local_addr = client.get_local_address().expect("Could not get local address");
+    let local_addr = client
+        .get_local_address()
+        .expect("Could not get local address");
     println!("Local MAC: {}", local_addr.mac);
     println!("Local IP:  {:?}", local_addr.ip);
 
@@ -125,18 +129,39 @@ fn main() {
             println!("Connection status: {:?}", status);
         }
     }
-    println!("Local IP: {:?}", client.get_local_address().expect("Could not get local IP address").ip);
+    println!(
+        "Local IP: {:?}",
+        client
+            .get_local_address()
+            .expect("Could not get local IP address")
+            .ip
+    );
 
     println!();
     println!("Creating TCP connection to ipify.com…");
     let remote_ip = Ipv4Addr::new(184, 73, 165, 106);
     let remote_port = 80;
+    //let remote_ip = Ipv4Addr::new(10, 0, 99, 161);
+    //let remote_port = 9000;
     client
-        .send_command(&espresso::commands::requests::EstablishConnection::tcp(
+        .send_command(&requests::EstablishConnection::tcp(
             MultiplexingType::NonMultiplexed,
             SocketAddr::V4(SocketAddrV4::new(remote_ip, remote_port)),
         ))
         .expect("Could not establish a TCP connection");
+
+    println!();
+    println!("Sending HTTP request…");
+    let data = "GET /?format=text HTTP/1.1\r\nHost: api.ipify.org\r\nUser-Agent: ESP8266\r\n\r\n";
+    client
+        .send_command(&requests::PrepareSendData::new(
+            MultiplexingType::NonMultiplexed,
+            data.len().try_into().unwrap(),
+        ))
+        .expect("Could not prepare sending data");
+    client
+        .send_command(&requests::SendData::<heapless::consts::U72>::new(&data))
+        .expect("Could not send data");
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}
