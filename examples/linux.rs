@@ -6,7 +6,7 @@ use std::time::Duration;
 use atat::AtatClient;
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
 
-use espresso::{commands::requests, types::WifiMode};
+use espresso::types::WifiMode;
 
 fn main() {
     env_logger::init();
@@ -14,8 +14,14 @@ fn main() {
     // Parse args
     let args: Vec<String> = env::args().collect();
     if args.len() != 5 {
-        println!("Usage: {} <path-to-serial> <baudrate> <ssid> <psk>", args[0]);
-        println!("Example: {} /dev/ttyUSB0 115200 mywifi hellopasswd123", args[0]);
+        println!(
+            "Usage: {} <path-to-serial> <baudrate> <ssid> <psk>",
+            args[0]
+        );
+        println!(
+            "Example: {} /dev/ttyUSB0 115200 mywifi hellopasswd123",
+            args[0]
+        );
         std::process::exit(1);
     }
     let dev = &args[1];
@@ -43,7 +49,7 @@ fn main() {
     // Initialize
     let timer = timer::SysTimer::new();
     let config = atat::Config::new(atat::Mode::Timeout);
-    let (mut client, mut ingress) = atat::new(serial_tx, timer, config);
+    let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer);
 
     // Launch reading thread
     thread::Builder::new()
@@ -71,50 +77,38 @@ fn main() {
         })
         .unwrap();
 
-    // Reset module
     print!("Testing whether device is online… ");
-    client
-        .send(&requests::At)
-        .expect("Could not send AT command");
+    client.selftest();
     println!("OK");
 
     // Get firmware information
     let version = client
-        .send(&requests::GetFirmwareVersion)
+        .get_firmware_version()
         .expect("Could not get firmware version");
     println!("{:?}", version);
 
     // Show current config
+    let wifi_mode = client.get_wifi_mode().expect("Could not get wifi mode");
     println!(
         "Wifi mode:\n  Current: {:?}\n  Default: {:?}",
-        client
-            .send(&requests::GetCurrentWifiMode)
-            .expect("Could not get current wifi mode"),
-        client
-            .send(&requests::GetDefaultWifiMode)
-            .expect("Could not get default wifi mode"),
+        wifi_mode.current, wifi_mode.default,
     );
 
     println!();
     print!("Setting current Wifi mode to Station… ");
     client
-        .send(&requests::SetWifiMode::to(WifiMode::Station, false))
+        .set_wifi_mode(WifiMode::Station, false)
         .expect("Could not set current wifi mode");
     println!("OK");
-
-    //println!();
-    //println!("Available APs:");
-    //client
-    //    .send(&requests::ListAccessPoints)
-    //    .expect("Could not set current wifi mode");
 
     println!();
     println!("Connect to access point with SSID {:?}…", ssid);
     let result = client
-        .send(&requests::JoinAccessPoint::new(ssid.as_str(), psk.as_str(), false))
+        .join_access_point(ssid.as_str(), psk.as_str(), false)
         .expect("Could not connect to access point");
     println!("{:?}", result);
 
+    println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}
 }
 

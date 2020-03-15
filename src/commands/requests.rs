@@ -1,4 +1,4 @@
-//! Requests that can be sent from the driver to the ESP8266 device.
+//! Raw requests that can be sent from the driver to the ESP8266 device.
 
 use atat::AtatCmd;
 use heapless::String;
@@ -151,17 +151,17 @@ impl AtatCmd for GetDefaultWifiMode {
 
 /// Set the WiFi mode.
 ///
-/// If `persistent` is set to `true`, then the configuration will be persisted
+/// If `persist` is set to `true`, then the configuration will be persisted
 /// to flash.
 #[derive(Debug)]
 pub struct SetWifiMode {
     mode: types::WifiMode,
-    persistent: bool,
+    persist: bool,
 }
 
 impl SetWifiMode {
-    pub fn to(mode: types::WifiMode, persistent: bool) -> Self {
-        Self { mode, persistent }
+    pub fn to(mode: types::WifiMode, persist: bool) -> Self {
+        Self { mode, persist }
     }
 }
 
@@ -170,7 +170,7 @@ impl AtatCmd for SetWifiMode {
     type Response = responses::EmptyResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        let mut string = String::from(match self.persistent {
+        let mut string = String::from(match self.persist {
             true => "AT+CWMODE_DEF=",
             false => "AT+CWMODE_CUR=",
         });
@@ -214,25 +214,25 @@ impl AtatCmd for ListAccessPoints {
 
 /// Join an Access Point.
 ///
-/// If `persistent` is set to `true`, then the credentials will be persisted to
+/// If `persist` is set to `true`, then the credentials will be persisted to
 /// flash.
 #[derive(Debug)]
 pub struct JoinAccessPoint {
     ssid: String<heapless::consts::U32>,
     psk: String<heapless::consts::U64>,
-    persistent: bool,
+    persist: bool,
 }
 
 impl JoinAccessPoint {
     pub fn new(
         ssid: impl Into<String<heapless::consts::U32>>,
         psk: impl Into<String<heapless::consts::U64>>,
-        persistent: bool,
+        persist: bool,
     ) -> Self {
         Self {
             ssid: ssid.into(),
             psk: psk.into(),
-            persistent,
+            persist,
         }
     }
 }
@@ -242,7 +242,7 @@ impl AtatCmd for JoinAccessPoint {
     type Response = responses::JoinResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        let mut string = String::from(match self.persistent {
+        let mut string = String::from(match self.persist {
             true => "AT+CWJAP_DEF=",
             false => "AT+CWJAP_CUR=",
         });

@@ -20,3 +20,11 @@ impl WifiMode {
         }
     }
 }
+
+/// Wraps both the current configuration and the default configuration.
+pub struct ConfigWithDefault<T> {
+    /// The current configuration.
+    pub current: T,
+    /// The default configuration, stored in flash memory.
+    pub default: T,
+}
