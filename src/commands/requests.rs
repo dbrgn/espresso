@@ -188,3 +188,26 @@ impl AtatCmd for SetWifiMode {
         }
     }
 }
+
+/// Query available APs.
+#[derive(Debug)]
+pub struct ListAccessPoints;
+
+impl AtatCmd for ListAccessPoints {
+    type CommandLen = heapless::consts::U10;
+    type Response = responses::EmptyResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CWLAP\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        println!("Parse: {:?}", resp);
+        // TODO: This currently overflows
+        Ok(responses::EmptyResponse)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        10_000
+    }
+}
