@@ -1,8 +1,9 @@
 //! Responses from the ESP8266 device.
 
 use atat::AtatResp;
-use heapless::consts::U32;
+use heapless::consts::{U17, U32};
 use heapless::String;
+use no_std_net::Ipv4Addr;
 
 use crate::types;
 
@@ -40,3 +41,11 @@ pub struct JoinResponse {
 impl AtatResp for JoinResponse {}
 
 impl AtatResp for types::ConnectionStatus {}
+
+#[derive(Debug)]
+pub struct LocalAddress {
+    pub ip: Option<Ipv4Addr>,
+    pub mac: String<U17>,
+}
+
+impl AtatResp for LocalAddress {}

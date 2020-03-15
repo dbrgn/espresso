@@ -104,6 +104,9 @@ fn main() {
         .get_connection_status()
         .expect("Could not get connection status");
     println!("Connection status: {:?}", status);
+    let local_addr = client.get_local_address().expect("Could not get local address");
+    println!("Local MAC: {}", local_addr.mac);
+    println!("Local IP:  {:?}", local_addr.ip);
 
     match status {
         ConnectionStatus::ConnectedToAccessPoint | ConnectionStatus::TransmissionEnded => {
@@ -122,6 +125,7 @@ fn main() {
             println!("Connection status: {:?}", status);
         }
     }
+    println!("Local IP: {:?}", client.get_local_address().expect("Could not get local IP address").ip);
 
     println!();
     println!("Creating TCP connection to ipify.com…");

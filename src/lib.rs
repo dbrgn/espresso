@@ -102,4 +102,9 @@ where
     pub fn get_connection_status(&mut self) -> EspResult<types::ConnectionStatus> {
         self.client.send(&requests::GetConnectionStatus)
     }
+
+    /// Return the locally assigned IP and MAC address.
+    pub fn get_local_address(&mut self) -> EspResult<responses::LocalAddress> {
+        self.client.send(&requests::GetLocalAddress)
+    }
 }

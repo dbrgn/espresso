@@ -344,7 +344,7 @@ impl AtatCmd for EstablishConnection {
         // Multiple: AT+CIPSTART=<link ID>,<type>,<remote IP>,<remote port>[,<TCP keep alive>]
         let mut string = String::from("AT+CIPSTART=");
         match self.mux {
-            types::MultiplexingType::NonMultiplexed => {},
+            types::MultiplexingType::NonMultiplexed => {}
             types::MultiplexingType::Multiplexed(ref id) => {
                 string.push_str(id.as_at_str()).unwrap();
                 string.push(',').unwrap();
@@ -367,7 +367,9 @@ impl AtatCmd for EstablishConnection {
                 }
                 string.push('"').unwrap();
                 string.push(',').unwrap();
-                string.push_str(addr.port().numtoa_str(10, &mut buf)).unwrap();
+                string
+                    .push_str(addr.port().numtoa_str(10, &mut buf))
+                    .unwrap();
             }
             SocketAddr::V6(_addr) => {
                 unimplemented!("IPv6 support is not implemented");
@@ -383,5 +385,40 @@ impl AtatCmd for EstablishConnection {
 
     fn max_timeout_ms(&self) -> u32 {
         30_000
+    }
+}
+
+/// Query the local IP and MAC addresses.
+#[derive(Debug)]
+pub struct GetLocalAddress;
+
+impl AtatCmd for GetLocalAddress {
+    type CommandLen = heapless::consts::U10;
+    type Response = responses::LocalAddress;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CIFSR\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        // Example: +CIFSR:STAIP,"10.0.99.164"\r\n+CIFSR:STAMAC,"dc:4f:22:7e:41:b4"
+        let mut mac = None;
+        let mut ip = None;
+        for line in resp.lines() {
+            if line.starts_with("+CIFSR:STAIP,") {
+                let ip_raw = &line[14..line.len() - 1];
+                ip = if ip_raw == "0.0.0.0" {
+                    None
+                } else {
+                    Some(ip_raw.parse().map_err(|_| atat::Error::ParseString)?)
+                };
+            } else if line.starts_with("+CIFSR:STAMAC,") {
+                mac = Some(String::from(&line[15..32]));
+            }
+        }
+        Ok(responses::LocalAddress {
+            ip,
+            mac: mac.ok_or(atat::Error::ParseString)?,
+        })
     }
 }
