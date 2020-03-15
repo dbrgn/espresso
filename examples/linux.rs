@@ -3,9 +3,9 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
+use espresso::types::{ConnectionStatus, MultiplexingType, WifiMode};
+use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
-
-use espresso::types::{WifiMode, ConnectionStatus};
 
 fn main() {
     env_logger::init();
@@ -105,20 +105,34 @@ fn main() {
         .expect("Could not get connection status");
     println!("Connection status: {:?}", status);
 
-    if status == ConnectionStatus::ConnectedToAccessPoint {
-        println!("Already connected!");
-    } else {
-        println!();
-        println!("Connecting to access point with SSID {:?}…", ssid);
-        let result = client
-            .join_access_point(ssid.as_str(), psk.as_str(), false)
-            .expect("Could not connect to access point");
-        println!("{:?}", result);
-        let status = client
-            .get_connection_status()
-            .expect("Could not get connection status");
-        println!("Connection status: {:?}", status);
+    match status {
+        ConnectionStatus::ConnectedToAccessPoint | ConnectionStatus::TransmissionEnded => {
+            println!("Already connected!");
+        }
+        _ => {
+            println!();
+            println!("Connecting to access point with SSID {:?}…", ssid);
+            let result = client
+                .join_access_point(ssid.as_str(), psk.as_str(), false)
+                .expect("Could not connect to access point");
+            println!("{:?}", result);
+            let status = client
+                .get_connection_status()
+                .expect("Could not get connection status");
+            println!("Connection status: {:?}", status);
+        }
     }
+
+    println!();
+    println!("Creating TCP connection to ipify.com…");
+    let remote_ip = Ipv4Addr::new(184, 73, 165, 106);
+    let remote_port = 80;
+    client
+        .send_command(&espresso::commands::requests::EstablishConnection::tcp(
+            MultiplexingType::NonMultiplexed,
+            SocketAddr::V4(SocketAddrV4::new(remote_ip, remote_port)),
+        ))
+        .expect("Could not establish a TCP connection");
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}

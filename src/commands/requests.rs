@@ -2,6 +2,8 @@
 
 use atat::AtatCmd;
 use heapless::String;
+use no_std_net::SocketAddr;
+use numtoa::NumToA;
 
 use crate::commands::responses;
 use crate::types;
@@ -247,11 +249,11 @@ impl AtatCmd for JoinAccessPoint {
             false => "AT+CWJAP_CUR=",
         });
         // TODO: Proper quoting
-        string.push_str("\"").unwrap();
+        string.push('"').unwrap();
         string.push_str(self.ssid.as_str()).unwrap();
         string.push_str("\",\"").unwrap();
         string.push_str(self.psk.as_str()).unwrap();
-        string.push_str("\"").unwrap();
+        string.push('"').unwrap();
         string.push_str("\r\n").unwrap();
         string
     }
@@ -304,5 +306,82 @@ impl AtatCmd for GetConnectionStatus {
             )),
             None => Err(atat::Error::InvalidResponse),
         }
+    }
+}
+
+/// Establish TCP Connection, UDP Transmission or SSL Connection.
+#[derive(Debug)]
+pub struct EstablishConnection {
+    mux: types::MultiplexingType,
+    protocol: types::Protocol,
+    remote_addr: SocketAddr,
+}
+
+impl EstablishConnection {
+    pub fn tcp(mux: types::MultiplexingType, remote_addr: SocketAddr) -> Self {
+        Self {
+            mux,
+            protocol: types::Protocol::Tcp,
+            remote_addr,
+        }
+    }
+
+    pub fn udp(mux: types::MultiplexingType, remote_addr: SocketAddr) -> Self {
+        Self {
+            mux,
+            protocol: types::Protocol::Udp,
+            remote_addr,
+        }
+    }
+}
+
+impl AtatCmd for EstablishConnection {
+    type CommandLen = heapless::consts::U42;
+    type Response = responses::EmptyResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        // Single: AT+CIPSTART=<type>,<remote IP>,<remote port>[,<TCP keep alive>]
+        // Multiple: AT+CIPSTART=<link ID>,<type>,<remote IP>,<remote port>[,<TCP keep alive>]
+        let mut string = String::from("AT+CIPSTART=");
+        match self.mux {
+            types::MultiplexingType::NonMultiplexed => {},
+            types::MultiplexingType::Multiplexed(ref id) => {
+                string.push_str(id.as_at_str()).unwrap();
+                string.push(',').unwrap();
+            }
+        }
+        string.push('"').unwrap();
+        string.push_str(self.protocol.as_at_str()).unwrap();
+        string.push('"').unwrap();
+        string.push(',').unwrap();
+        match self.remote_addr {
+            SocketAddr::V4(addr) => {
+                let octets = addr.ip().octets();
+                let mut buf = [0; 5];
+                string.push('"').unwrap();
+                for i in 0..=3 {
+                    string.push_str(octets[i].numtoa_str(10, &mut buf)).unwrap();
+                    if i != 3 {
+                        string.push('.').unwrap();
+                    }
+                }
+                string.push('"').unwrap();
+                string.push(',').unwrap();
+                string.push_str(addr.port().numtoa_str(10, &mut buf)).unwrap();
+            }
+            SocketAddr::V6(_addr) => {
+                unimplemented!("IPv6 support is not implemented");
+            }
+        }
+        string.push_str("\r\n").unwrap();
+        string
+    }
+
+    fn parse(&self, _resp: &str) -> Result<Self::Response, atat::Error> {
+        Ok(responses::EmptyResponse)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        30_000
     }
 }

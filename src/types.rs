@@ -44,3 +44,49 @@ pub enum ConnectionStatus {
     Other(u8),
 }
 
+
+/// The ESP8266 can manage up to five parallel connections with id 0..4.
+#[derive(Debug)]
+pub enum ConnectionId {
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+}
+
+impl ConnectionId {
+    pub(crate) fn as_at_str(&self) -> &'static str {
+        match self {
+            ConnectionId::Zero => "0",
+            ConnectionId::One => "1",
+            ConnectionId::Two => "2",
+            ConnectionId::Three => "3",
+            ConnectionId::Four => "4",
+        }
+    }
+}
+
+/// The ESP8266 can either run in single-connection mode (`NonMultiplexed`) or
+/// in multi-connection mode (`Multiplexed`).
+#[derive(Debug)]
+pub enum MultiplexingType {
+    NonMultiplexed,
+    Multiplexed(ConnectionId),
+}
+
+/// The connection protocol.
+#[derive(Debug)]
+pub enum Protocol {
+    Tcp,
+    Udp,
+}
+
+impl Protocol {
+    pub(crate) fn as_at_str(&self) -> &'static str {
+        match self {
+            Protocol::Tcp => "TCP",
+            Protocol::Udp => "UDP",
+        }
+    }
+}
