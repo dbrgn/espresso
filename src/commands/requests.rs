@@ -257,7 +257,6 @@ impl AtatCmd for JoinAccessPoint {
     }
 
     fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
-        println!("Parse: {:?}", resp);
         let mut response = responses::JoinResponse {
             connected: false,
             got_ip: false,
@@ -276,5 +275,34 @@ impl AtatCmd for JoinAccessPoint {
     fn max_timeout_ms(&self) -> u32 {
         // From experiments, it seems that a timeout is returned after ~15s
         25_000
+    }
+}
+
+/// Query information about current connection.
+#[derive(Debug)]
+pub struct GetConnectionStatus;
+
+impl AtatCmd for GetConnectionStatus {
+    type CommandLen = heapless::consts::U14;
+    type Response = types::ConnectionStatus;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        String::from("AT+CIPSTATUS\r\n")
+    }
+
+    fn parse(&self, resp: &str) -> Result<Self::Response, atat::Error> {
+        if !resp.starts_with("STATUS:") {
+            return Err(atat::Error::InvalidResponse);
+        }
+        match resp.get(7..8) {
+            Some("2") => Ok(types::ConnectionStatus::ConnectedToAccessPoint),
+            Some("3") => Ok(types::ConnectionStatus::InTransmission),
+            Some("4") => Ok(types::ConnectionStatus::TransmissionEnded),
+            Some("5") => Ok(types::ConnectionStatus::Disconnected),
+            Some(other) => Ok(types::ConnectionStatus::Other(
+                other.parse().map_err(|_| atat::Error::ParseString)?,
+            )),
+            None => Err(atat::Error::InvalidResponse),
+        }
     }
 }

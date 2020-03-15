@@ -42,6 +42,14 @@ where
         (Self { client }, ingress)
     }
 
+    /// Send a raw command to the device.
+    pub fn send_command<T>(&mut self, command: &T) -> EspResult<T::Response>
+    where
+        T: atat::AtatCmd,
+    {
+        self.client.send(command)
+    }
+
     /// Test whether the device is connected and able to communicate.
     pub fn selftest(&mut self) -> EspResult<()> {
         self.client
@@ -79,6 +87,7 @@ where
             .map(|_: responses::EmptyResponse| ())
     }
 
+    /// Join the specified access point.
     pub fn join_access_point(
         &mut self,
         ssid: impl Into<String<heapless::consts::U32>>,
@@ -87,5 +96,10 @@ where
     ) -> EspResult<responses::JoinResponse> {
         self.client
             .send(&requests::JoinAccessPoint::new(ssid, psk, persist))
+    }
+
+    /// Return the current connection status.
+    pub fn get_connection_status(&mut self) -> EspResult<types::ConnectionStatus> {
+        self.client.send(&requests::GetConnectionStatus)
     }
 }

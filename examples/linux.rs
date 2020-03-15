@@ -3,10 +3,9 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
-use atat::AtatClient;
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
 
-use espresso::types::WifiMode;
+use espresso::types::{WifiMode, ConnectionStatus};
 
 fn main() {
     env_logger::init();
@@ -48,7 +47,6 @@ fn main() {
 
     // Initialize
     let timer = timer::SysTimer::new();
-    let config = atat::Config::new(atat::Mode::Timeout);
     let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer);
 
     // Launch reading thread
@@ -78,7 +76,7 @@ fn main() {
         .unwrap();
 
     print!("Testing whether device is online… ");
-    client.selftest();
+    client.selftest().expect("Self test failed");
     println!("OK");
 
     // Get firmware information
@@ -102,11 +100,25 @@ fn main() {
     println!("OK");
 
     println!();
-    println!("Connect to access point with SSID {:?}…", ssid);
-    let result = client
-        .join_access_point(ssid.as_str(), psk.as_str(), false)
-        .expect("Could not connect to access point");
-    println!("{:?}", result);
+    let status = client
+        .get_connection_status()
+        .expect("Could not get connection status");
+    println!("Connection status: {:?}", status);
+
+    if status == ConnectionStatus::ConnectedToAccessPoint {
+        println!("Already connected!");
+    } else {
+        println!();
+        println!("Connecting to access point with SSID {:?}…", ssid);
+        let result = client
+            .join_access_point(ssid.as_str(), psk.as_str(), false)
+            .expect("Could not connect to access point");
+        println!("{:?}", result);
+        let status = client
+            .get_connection_status()
+            .expect("Could not get connection status");
+        println!("Connection status: {:?}", status);
+    }
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}

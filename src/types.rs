@@ -28,3 +28,19 @@ pub struct ConfigWithDefault<T> {
     /// The default configuration, stored in flash memory.
     pub default: T,
 }
+
+/// The connection status.
+#[derive(Debug, PartialEq)]
+pub enum ConnectionStatus {
+    /// The ESP8266 Station is connected to an AP and its IP is obtained
+    ConnectedToAccessPoint,
+    /// The ESP8266 Station has created a TCP or UDP transmission
+    InTransmission,
+    /// The TCP or UDP transmission of ESP8266 Station is disconnected
+    TransmissionEnded,
+    /// The ESP8266 Station does NOT connect to an AP
+    Disconnected,
+    /// Unknown status
+    Other(u8),
+}
+

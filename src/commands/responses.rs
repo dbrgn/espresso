@@ -38,3 +38,5 @@ pub struct JoinResponse {
 }
 
 impl AtatResp for JoinResponse {}
+
+impl AtatResp for types::ConnectionStatus {}
