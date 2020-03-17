@@ -7,7 +7,7 @@ This is still very much work in progress.
 
 ## Resources
 
-- [ESP8266 command reference](https://room-15.github.io/blog/2015/03/26/esp8266-at-command-reference/)
+- [ESP8266 AT Instruction Set](https://www.espressif.com/sites/default/files/documentation/4a-esp8266_at_instruction_set_en.pdf)
 - [ITU V.250 specification ("AT Commands")](https://www.itu.int/rec/T-REC-V.250-200307-I/en)
 
 
