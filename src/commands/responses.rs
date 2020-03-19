@@ -1,6 +1,7 @@
 //! Responses from the ESP8266 device.
 
 use atat::AtatResp;
+use atat::atat_derive::AtatResp;
 use heapless::consts::{U17, U32};
 use heapless::String;
 use no_std_net::Ipv4Addr;
@@ -8,10 +9,8 @@ use no_std_net::Ipv4Addr;
 use crate::types;
 
 /// An empty response, no body.
-#[derive(Debug)]
+#[derive(Debug, AtatResp)]
 pub struct EmptyResponse;
-
-impl AtatResp for EmptyResponse {}
 
 /// Firmware version.
 #[derive(Debug)]
@@ -49,3 +48,9 @@ pub struct LocalAddress {
 }
 
 impl AtatResp for LocalAddress {}
+
+#[derive(Debug, AtatResp)]
+pub struct WifiModeResp {
+    #[at_arg(position = 0)]
+    pub mode: types::WifiMode,
+}

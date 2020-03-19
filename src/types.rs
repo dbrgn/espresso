@@ -1,24 +1,17 @@
 //! Shared types.
 
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /// The WiFi mode.
-#[derive(Debug)]
+#[derive(Debug, Deserialize_repr, Serialize_repr)]
+#[repr(u8)]
 pub enum WifiMode {
     /// Station mode (client)
-    Station,
+    Station = 1,
     /// Access point mode (server)
-    Ap,
+    Ap = 2,
     /// Both station and AP mode
-    Both,
-}
-
-impl WifiMode {
-    pub(crate) fn as_at_str(&self) -> &'static str {
-        match self {
-            WifiMode::Station => "1",
-            WifiMode::Ap => "2",
-            WifiMode::Both => "3",
-        }
-    }
+    Both = 3,
 }
 
 /// Wraps both the current configuration and the default configuration.

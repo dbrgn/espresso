@@ -64,27 +64,31 @@ where
 
     /// Return the current WiFi mode.
     pub fn get_current_wifi_mode(&mut self) -> EspResult<types::WifiMode> {
-        self.client.send(&requests::GetCurrentWifiMode)
+        self.client.send(&requests::GetCurrentWifiMode).map(|r| r.mode)
     }
 
     /// Return the default WiFi mode.
     pub fn get_default_wifi_mode(&mut self) -> EspResult<types::WifiMode> {
-        self.client.send(&requests::GetDefaultWifiMode)
+        self.client.send(&requests::GetDefaultWifiMode).map(|r| r.mode)
     }
 
     /// Return the current and default WiFi mode.
     pub fn get_wifi_mode(&mut self) -> EspResult<ConfigWithDefault<types::WifiMode>> {
         Ok(ConfigWithDefault {
-            current: self.client.send(&requests::GetCurrentWifiMode)?,
-            default: self.client.send(&requests::GetDefaultWifiMode)?,
+            current: self.client.send(&requests::GetCurrentWifiMode)?.mode,
+            default: self.client.send(&requests::GetDefaultWifiMode)?.mode,
         })
     }
 
     /// Set the WiFi mode.
     pub fn set_wifi_mode(&mut self, mode: types::WifiMode, persist: bool) -> EspResult<()> {
-        self.client
-            .send(&requests::SetWifiMode::to(mode, persist))
-            .map(|_: responses::EmptyResponse| ())
+        let resp = if persist {
+            self.client.send(&requests::SetDefaultWifiMode {mode })
+        } else {
+            self.client.send(&requests::SetCurrentWifiMode { mode })
+        };
+
+        resp.map(|_: responses::EmptyResponse| ())
     }
 
     /// Join the specified access point.
