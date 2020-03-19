@@ -44,7 +44,6 @@ pub enum ConnectionStatus {
     Other(u8),
 }
 
-
 /// The ESP8266 can manage up to five parallel connections with id 0..4.
 #[derive(Debug)]
 pub enum ConnectionId {
