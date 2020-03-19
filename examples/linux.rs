@@ -49,7 +49,7 @@ fn main() {
 
     // Initialize
     let timer = timer::SysTimer::new();
-    let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer);
+    let (mut client, mut ingress) = espresso::client(serial_tx, timer);
 
     // Launch reading thread
     thread::Builder::new()
@@ -82,10 +82,10 @@ fn main() {
     println!("OK");
 
     // Get firmware information
-    let version = client
+    /*let version = client
         .get_firmware_version()
         .expect("Could not get firmware version");
-    println!("{:?}", version);
+    println!("{:?}", version);*/
 
     // Show current config
     let wifi_mode = client.get_wifi_mode().expect("Could not get wifi mode");
@@ -96,8 +96,8 @@ fn main() {
 
     println!();
     print!("Setting current Wifi mode to Station… ");
-    client
-        .set_wifi_mode(WifiMode::Station, false)
+    let mut client = client
+        .set_station_mode(false)
         .expect("Could not set current wifi mode");
     println!("OK");
 
@@ -112,23 +112,16 @@ fn main() {
     println!("Local MAC: {}", local_addr.mac);
     println!("Local IP:  {:?}", local_addr.ip);
 
-    match status {
-        ConnectionStatus::ConnectedToAccessPoint | ConnectionStatus::TransmissionEnded => {
-            println!("Already connected!");
-        }
-        _ => {
-            println!();
-            println!("Connecting to access point with SSID {:?}…", ssid);
-            let result = client
-                .join_access_point(ssid.as_str(), psk.as_str(), false)
-                .expect("Could not connect to access point");
-            println!("{:?}", result);
-            let status = client
-                .get_connection_status()
-                .expect("Could not get connection status");
-            println!("Connection status: {:?}", status);
-        }
-    }
+    println!("Connecting to access point with SSID {:?}…", ssid);
+    let mut client = client
+        .join_access_point(ssid.as_str(), psk.as_str(), false)
+        .expect("Could not connect to access point");
+
+    let status = client
+        .get_connection_status()
+        .expect("Could not get connection status");
+    println!("Connection status: {:?}", status);
+
     println!(
         "Local IP: {:?}",
         client
