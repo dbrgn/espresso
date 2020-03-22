@@ -4,7 +4,7 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
-use espresso::commands::requests;
+use espresso::commands::{requests, urcs};
 use espresso::types::{ConnectionStatus, MultiplexingType, WifiMode};
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
@@ -77,9 +77,19 @@ fn main() {
         })
         .unwrap();
 
+    macro_rules! check_urc {
+        () => {
+            if let Some(urc) = client.check_urc::<urcs::EspUrc>() {
+                println!("Received URC: {:?}", urc);
+            }
+        }
+    }
+
     print!("Testing whether device is online… ");
     client.selftest().expect("Self test failed");
     println!("OK");
+
+    check_urc!();
 
     // Get firmware information
     let version = client
@@ -157,9 +167,14 @@ fn main() {
             data.len().try_into().unwrap(),
         ))
         .expect("Could not prepare sending data");
-    client
-        .send_command(&requests::SendData::<heapless::consts::U72>::new(&data))
-        .expect("Could not send data");
+    let _ = client
+        .send_command(&requests::SendData::<heapless::consts::U72>::new(&data));
+        //.expect("Could not send data"); // TODO: Commented out for now because the
+                                          // non-standard response code always results in a timeout
+
+    check_urc!();
+    check_urc!();
+
     client
         .send_command(&requests::CloseConnection::new(
             MultiplexingType::NonMultiplexed,

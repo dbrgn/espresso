@@ -3,7 +3,7 @@
 use atat::AtatClient;
 use embedded_hal::serial;
 use embedded_hal::timer;
-use heapless::String;
+use heapless::{consts, String};
 
 pub mod commands;
 pub mod types;
@@ -13,6 +13,49 @@ use types::ConfigWithDefault;
 
 /// Type alias for a result that may return an ATAT error.
 pub type EspResult<T> = Result<T, nb::Error<atat::Error>>;
+
+pub struct EspUrcDetector {}
+
+impl atat::UrcMatcher for EspUrcDetector {
+    type MaxLen = consts::U256; // TODO: Max data bytes: 1460 (TCP MTU)
+    fn process(&mut self, buf: &mut String<consts::U256>) -> atat::UrcMatcherResult<Self::MaxLen> {
+        if buf.starts_with("+IPD,") {
+            // The IPD URC tells us how many bytes will follow
+            let start = 5;
+            let mut end = 5;
+            for i in 5..buf.len() - 1 {
+                if &buf[i..i + 1] == ":" {
+                    end = i;
+                    break;
+                }
+            }
+
+            // If we didn't find the length bytes, we haven't yet received the entire URC.
+            if end == start {
+                return atat::UrcMatcherResult::Incomplete;
+            }
+
+            // Convert the length to a number
+            let length = match buf[start..end].parse::<usize>() {
+                Ok(length) => length,
+                Err(_) => return atat::UrcMatcherResult::Incomplete,
+            };
+
+            // Check whether we've got the entire response
+            let total_length = end + 1 + length;
+            if buf.len() < total_length {
+                atat::UrcMatcherResult::Incomplete
+            } else {
+                // TODO: Optimize this, so there's less copying
+                let data = String::from(&buf[0..total_length]);
+                *buf = String::from(&buf[total_length..]);
+                atat::UrcMatcherResult::Complete(data)
+            }
+        } else {
+            atat::UrcMatcherResult::NotHandled
+        }
+    }
+}
 
 /// An ESP8266 client.
 pub struct EspClient<TX, TIMER>
@@ -36,9 +79,9 @@ where
     /// returned. That needs to be hooked up with the incoming serial bytes.
     ///
     /// [IngressManager]: ../atat/istruct.IngressManager.html
-    pub fn new(serial_tx: TX, timer: TIMER) -> (Self, atat::IngressManager) {
+    pub fn new(serial_tx: TX, timer: TIMER) -> (Self, atat::IngressManager<EspUrcDetector>) {
         let config = atat::Config::new(atat::Mode::Timeout);
-        let (client, ingress) = atat::new(serial_tx, timer, config);
+        let (client, ingress) = atat::new(serial_tx, timer, config, Some(EspUrcDetector {}));
         (Self { client }, ingress)
     }
 
@@ -48,6 +91,10 @@ where
         T: atat::AtatCmd,
     {
         self.client.send(command)
+    }
+
+    pub fn check_urc<T: atat::AtatUrc>(&mut self) -> Option<T::Response> {
+        self.client.check_urc::<T>()
     }
 
     /// Test whether the device is connected and able to communicate.
