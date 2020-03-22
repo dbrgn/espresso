@@ -514,3 +514,42 @@ where
         30_000
     }
 }
+
+/// Close the TCP/UDP/SSL Connection.
+#[derive(Debug)]
+pub struct CloseConnection {
+    mux: types::MultiplexingType,
+}
+
+impl CloseConnection {
+    pub fn new(mux: types::MultiplexingType) -> Self {
+        Self { mux }
+    }
+}
+
+impl AtatCmd for CloseConnection {
+    type CommandLen = heapless::consts::U15;
+    type Response = responses::EmptyResponse;
+
+    fn as_string(&self) -> String<Self::CommandLen> {
+        let mut string = String::from("AT+CIPCLOSE");
+        match self.mux {
+            types::MultiplexingType::NonMultiplexed => {}
+            types::MultiplexingType::Multiplexed(ref id) => {
+                // TODO: Send connection id "5" to close all connections
+                string.push('=').unwrap();
+                string.push_str(id.as_at_str()).unwrap();
+            }
+        }
+        string.push_str("\r\n").unwrap();
+        string
+    }
+
+    fn parse(&self, _resp: &str) -> Result<Self::Response, atat::Error> {
+        Ok(responses::EmptyResponse)
+    }
+
+    fn max_timeout_ms(&self) -> u32 {
+        5_000
+    }
+}

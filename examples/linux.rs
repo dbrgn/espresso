@@ -141,8 +141,6 @@ fn main() {
     println!("Creating TCP connection to ipify.com…");
     let remote_ip = Ipv4Addr::new(184, 73, 165, 106);
     let remote_port = 80;
-    //let remote_ip = Ipv4Addr::new(10, 0, 99, 161);
-    //let remote_port = 9000;
     client
         .send_command(&requests::EstablishConnection::tcp(
             MultiplexingType::NonMultiplexed,
@@ -162,6 +160,9 @@ fn main() {
     client
         .send_command(&requests::SendData::<heapless::consts::U72>::new(&data))
         .expect("Could not send data");
+    client
+        .send_command(&requests::CloseConnection::new(MultiplexingType::NonMultiplexed))
+        .expect("Could not close connection");
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}
