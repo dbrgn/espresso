@@ -1,5 +1,8 @@
 # espresso
 
+[![Build status][workflow-badge]][workflow]
+![No Std][no-std-badge]
+
 AT based driver crate for ESP8266 WiFi modules.
 
 This is still very much work in progress.
@@ -25,3 +28,8 @@ Licensed under either of
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
+
+<!-- Badges -->
+[workflow]: https://github.com/dbrgn/espresso/actions?query=workflow%3A"Continuous+integration"
+[workflow-badge]: https://github.com/dbrgn/espresso/workflows/Continuous%20integration/badge.svg
+[no-std-badge]: https://img.shields.io/badge/no__std-yes-blue
