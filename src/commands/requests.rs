@@ -172,9 +172,10 @@ impl AtatCmd for SetWifiMode {
     type Response = responses::EmptyResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        let mut string = String::from(match self.persist {
-            true => "AT+CWMODE_DEF=",
-            false => "AT+CWMODE_CUR=",
+        let mut string = String::from(if self.persist {
+            "AT+CWMODE_DEF="
+        } else {
+            "AT+CWMODE_CUR="
         });
         string.push_str(self.mode.as_at_str()).unwrap();
         string.push_str("\r\n").unwrap();
@@ -244,9 +245,10 @@ impl AtatCmd for JoinAccessPoint {
     type Response = responses::JoinResponse;
 
     fn as_string(&self) -> String<Self::CommandLen> {
-        let mut string = String::from(match self.persist {
-            true => "AT+CWJAP_DEF=",
-            false => "AT+CWJAP_CUR=",
+        let mut string = String::from(if self.persist {
+            "AT+CWJAP_DEF="
+        } else {
+            "AT+CWJAP_CUR="
         });
         // TODO: Proper quoting
         string.push('"').unwrap();
@@ -394,8 +396,8 @@ impl AtatCmd for EstablishConnection {
                 let octets = addr.ip().octets();
                 let mut buf = [0; 5];
                 string.push('"').unwrap();
-                for i in 0..=3 {
-                    string.push_str(octets[i].numtoa_str(10, &mut buf)).unwrap();
+                for (i, octet) in octets.iter().enumerate() {
+                    string.push_str(octet.numtoa_str(10, &mut buf)).unwrap();
                     if i != 3 {
                         string.push('.').unwrap();
                     }

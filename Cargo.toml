@@ -19,7 +19,7 @@ numtoa = "0.2"
 [dev-dependencies]
 env_logger = "0.6"
 log = "0.4"
-serialport = { git = "https://gitlab.com/dbrgn/serialport-rs", branch = "embedded", features = ["embedded"] }
+serialport = { git = "https://gitlab.com/dbrgn/serialport-rs", branch = "embedded", features = ["embedded"], default_features = false }
 void = "1"
 
 [features]
