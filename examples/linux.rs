@@ -161,7 +161,9 @@ fn main() {
         .send_command(&requests::SendData::<heapless::consts::U72>::new(&data))
         .expect("Could not send data");
     client
-        .send_command(&requests::CloseConnection::new(MultiplexingType::NonMultiplexed))
+        .send_command(&requests::CloseConnection::new(
+            MultiplexingType::NonMultiplexed,
+        ))
         .expect("Could not close connection");
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
