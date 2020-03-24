@@ -3,6 +3,8 @@
 [![Build status][workflow-badge]][workflow]
 ![No Std][no-std-badge]
 
+![Logo](faema-small.png)
+
 AT based driver crate for ESP8266 WiFi modules.
 
 This is still very much work in progress.
