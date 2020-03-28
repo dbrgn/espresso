@@ -1,6 +1,6 @@
 //! A crate to use ESP8266 WiFi modules over a serial connection.
 
-use atat::AtatClient;
+use atat::{AtatClient, ClientBuilder};
 use embedded_hal::serial;
 use embedded_hal::timer;
 use heapless::{consts, String};
@@ -81,7 +81,9 @@ where
     /// [IngressManager]: ../atat/istruct.IngressManager.html
     pub fn new(serial_tx: TX, timer: TIMER) -> (Self, atat::IngressManager<EspUrcDetector>) {
         let config = atat::Config::new(atat::Mode::Timeout);
-        let (client, ingress) = atat::new(serial_tx, timer, config, Some(EspUrcDetector {}));
+        let (client, ingress) = ClientBuilder::new(serial_tx, timer, config)
+            .with_custom_urc_matcher(EspUrcDetector {})
+            .build();
         (Self { client }, ingress)
     }
 
