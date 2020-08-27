@@ -9,6 +9,9 @@ AT based driver crate for ESP8266 WiFi modules.
 
 This is still very much work in progress.
 
+Current state: Alpha quality. Connecting to APs in station mode works (although
+it's not yet very robust). Sending and receiving data over the network should
+work partially.
 
 ## Resources
 

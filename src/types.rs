@@ -1,5 +1,7 @@
 //! Shared types.
 
+use core::convert::TryFrom;
+
 /// The WiFi mode.
 #[derive(Debug)]
 pub enum WifiMode {
@@ -62,6 +64,21 @@ impl ConnectionId {
             ConnectionId::Two => "2",
             ConnectionId::Three => "3",
             ConnectionId::Four => "4",
+        }
+    }
+}
+
+impl TryFrom<&str> for ConnectionId {
+    type Error = atat::Error;
+
+    fn try_from(val: &str) -> Result<Self, atat::Error> {
+        match val {
+            "0" => Ok(ConnectionId::Zero),
+            "1" => Ok(ConnectionId::One),
+            "2" => Ok(ConnectionId::Two),
+            "3" => Ok(ConnectionId::Three),
+            "4" => Ok(ConnectionId::Four),
+            _ => Err(atat::Error::ParseString),
         }
     }
 }
