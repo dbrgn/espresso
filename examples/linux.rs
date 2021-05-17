@@ -4,8 +4,10 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
+use atat::{ComQueue, Queues, ResQueue, UrcQueue};
 use espresso::commands::requests;
 use espresso::types::{ConnectionStatus, MultiplexingType, WifiMode};
+use heapless::{consts, spsc::Queue};
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
 
@@ -48,8 +50,18 @@ fn main() {
     let mut serial_rx = serial_tx.try_clone().expect("Could not clone serial port");
 
     // Initialize
+    static mut RES_QUEUE: ResQueue<consts::U256> = Queue(heapless::i::Queue::u8());
+    static mut URC_QUEUE: UrcQueue<consts::U256, consts::U10> = Queue(heapless::i::Queue::u8());
+    static mut COM_QUEUE: ComQueue = Queue(heapless::i::Queue::u8());
+
+    let queues = Queues {
+        res_queue: unsafe { RES_QUEUE.split() },
+        urc_queue: unsafe { URC_QUEUE.split() },
+        com_queue: unsafe { COM_QUEUE.split() },
+    };
+
     let timer = timer::SysTimer::new();
-    let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer);
+    let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer, queues);
 
     // Launch reading thread
     thread::Builder::new()
@@ -192,16 +204,18 @@ mod timer {
 
     impl CountDown for SysTimer {
         type Time = u32;
+        type Error = ();
 
-        fn start<T>(&mut self, count: T)
+        fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error> 
         where
             T: Into<Self::Time>,
         {
             self.start = Instant::now();
             self.duration_ms = count.into();
+            Ok(())
         }
 
-        fn wait(&mut self) -> nb::Result<(), void::Void> {
+        fn try_wait(&mut self) -> nb::Result<(), Self::Error> {
             if (Instant::now() - self.start) > Duration::from_millis(self.duration_ms as u64) {
                 // Restart the timer to fulfil the contract by `Periodic`
                 self.start = Instant::now();
