@@ -28,7 +28,10 @@ impl AtatCmd for At {
         Vec::from_slice(b"AT\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, Error<Self::Error>> {
+    fn parse(
+        &self,
+        resp: Result<&[u8], &InternalError>,
+    ) -> Result<Self::Response, Error<Self::Error>> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.trim().is_empty() {
             Err(atat::Error::InvalidResponse)
@@ -186,12 +189,14 @@ impl AtatCmd for SetWifiMode {
 
     fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
         let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
-        let persist_str = if self.persist {
-            "DEF"
-        } else {
-            "CUR"
-        };
-        write!(buf, "AT+CWMODE_{}={}\r\n", persist_str, self.mode.as_at_str()).unwrap();
+        let persist_str = if self.persist { "DEF" } else { "CUR" };
+        write!(
+            buf,
+            "AT+CWMODE_{}={}\r\n",
+            persist_str,
+            self.mode.as_at_str()
+        )
+        .unwrap();
         buf
     }
 
@@ -262,13 +267,16 @@ impl AtatCmd for JoinAccessPoint {
 
     fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
         let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
-        let persist_str = if self.persist {
-            "DEF"
-        } else {
-            "CUR"
-        };
+        let persist_str = if self.persist { "DEF" } else { "CUR" };
         // TODO: Proper quoting
-        write!(buf, "AT+CWJAP_{}=\"{}\",\"{}\"\r\n", persist_str, self.ssid.as_str(), self.psk.as_str()).unwrap();
+        write!(
+            buf,
+            "AT+CWJAP_{}=\"{}\",\"{}\"\r\n",
+            persist_str,
+            self.ssid.as_str(),
+            self.psk.as_str()
+        )
+        .unwrap();
         buf
     }
 

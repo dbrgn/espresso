@@ -206,7 +206,7 @@ mod timer {
         type Time = u32;
         type Error = ();
 
-        fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error> 
+        fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error>
         where
             T: Into<Self::Time>,
         {

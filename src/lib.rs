@@ -5,7 +5,7 @@
 use atat::{AtatClient, ClientBuilder, DefaultDigester, DefaultUrcMatcher, GenericError, Queues};
 use embedded_hal::serial;
 use embedded_hal::timer;
-use heapless::{String, Vec, ArrayLength};
+use heapless::{ArrayLength, String, Vec};
 
 pub mod commands;
 pub mod types;
@@ -23,7 +23,7 @@ where
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
     BufLen: ArrayLength<u8>,
-    UrcCapacity: ArrayLength<Vec<u8, BufLen>>, 
+    UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
 {
     client: atat::Client<TX, TIMER, BufLen, UrcCapacity>,
 }
@@ -34,7 +34,7 @@ where
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
     BufLen: ArrayLength<u8>,
-    UrcCapacity: ArrayLength<Vec<u8, BufLen>>, 
+    UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
 {
     /// Create a new ESP8266 client.
     ///
@@ -42,10 +42,17 @@ where
     /// returned. That needs to be hooked up with the incoming serial bytes.
     ///
     /// [IngressManager]: ../atat/istruct.IngressManager.html
-    pub fn new(serial_tx: TX, timer: TIMER, queues: Queues<BufLen, UrcCapacity>) -> (Self, atat::IngressManager<BufLen, DefaultDigester, DefaultUrcMatcher, UrcCapacity>) 
-    where 
+    pub fn new(
+        serial_tx: TX,
+        timer: TIMER,
+        queues: Queues<BufLen, UrcCapacity>,
+    ) -> (
+        Self,
+        atat::IngressManager<BufLen, DefaultDigester, DefaultUrcMatcher, UrcCapacity>,
+    )
+    where
         BufLen: ArrayLength<u8>,
-        UrcCapacity: ArrayLength<Vec<u8, BufLen>>, 
+        UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
     {
         let config = atat::Config::new(atat::Mode::Blocking);
         let (client, ingress) = ClientBuilder::new(serial_tx, timer, config).build(queues);
@@ -91,7 +98,11 @@ where
     }
 
     /// Set the WiFi mode.
-    pub fn set_wifi_mode(&mut self, mode: types::WifiMode, persist: bool) -> EspResult<(), GenericError> {
+    pub fn set_wifi_mode(
+        &mut self,
+        mode: types::WifiMode,
+        persist: bool,
+    ) -> EspResult<(), GenericError> {
         self.client
             .send(&requests::SetWifiMode::to(mode, persist))
             .map(|_: responses::EmptyResponse| ())
