@@ -1,7 +1,6 @@
 //! Responses from the ESP8266 device.
 
 use atat::AtatResp;
-use heapless::consts::{U17, U32};
 use heapless::String;
 use no_std_net::Ipv4Addr;
 
@@ -16,18 +15,18 @@ impl AtatResp for EmptyResponse {}
 /// Firmware version.
 #[derive(Debug)]
 pub struct FirmwareVersion {
-    pub at_version: String<U32>,
-    pub sdk_version: String<U32>,
-    pub compile_time: String<U32>,
+    pub at_version: String<32>,
+    pub sdk_version: String<32>,
+    pub compile_time: String<32>,
 }
 
 impl AtatResp for FirmwareVersion {}
 
 /// Generic string response.
 #[derive(Debug)]
-pub struct StringResponse<L: heapless::ArrayLength<u8>>(pub(crate) String<L>);
+pub struct StringResponse<const L: usize>(pub(crate) String<L>);
 
-impl<L: heapless::ArrayLength<u8>> AtatResp for StringResponse<L> {}
+impl<const L: usize> AtatResp for StringResponse<L> {}
 
 impl AtatResp for types::WifiMode {}
 
@@ -45,7 +44,7 @@ impl AtatResp for types::ConnectionStatus {}
 #[derive(Debug)]
 pub struct LocalAddress {
     pub ip: Option<Ipv4Addr>,
-    pub mac: String<U17>,
+    pub mac: String<17>,
 }
 
 impl AtatResp for LocalAddress {}

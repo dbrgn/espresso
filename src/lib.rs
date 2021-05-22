@@ -5,7 +5,7 @@
 use atat::{AtatClient, ClientBuilder, DefaultDigester, DefaultUrcMatcher, GenericError, Queues};
 use embedded_hal::serial;
 use embedded_hal::timer;
-use heapless::{ArrayLength, String, Vec};
+use heapless::String;
 
 pub mod commands;
 pub mod types;
@@ -17,24 +17,21 @@ use types::ConfigWithDefault;
 pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
 
 /// An ESP8266 client.
-pub struct EspClient<TX, TIMER, BufLen, UrcCapacity>
+pub struct EspClient<TX, TIMER, const BUF_LEN: usize, const URC_CAPACITY: usize>
 where
     TX: serial::Write<u8>,
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
-    BufLen: ArrayLength<u8>,
-    UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
 {
-    client: atat::Client<TX, TIMER, BufLen, UrcCapacity>,
+    client: atat::Client<TX, TIMER, BUF_LEN, URC_CAPACITY>,
 }
 
-impl<TX, TIMER, BufLen, UrcCapacity> EspClient<TX, TIMER, BufLen, UrcCapacity>
+impl<TX, TIMER, const BUF_LEN: usize, const URC_CAPACITY: usize>
+    EspClient<TX, TIMER, BUF_LEN, URC_CAPACITY>
 where
     TX: serial::Write<u8>,
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
-    BufLen: ArrayLength<u8>,
-    UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
 {
     /// Create a new ESP8266 client.
     ///
@@ -45,24 +42,23 @@ where
     pub fn new(
         serial_tx: TX,
         timer: TIMER,
-        queues: Queues<BufLen, UrcCapacity>,
+        queues: Queues<BUF_LEN, URC_CAPACITY>,
     ) -> (
         Self,
-        atat::IngressManager<BufLen, DefaultDigester, DefaultUrcMatcher, UrcCapacity>,
-    )
-    where
-        BufLen: ArrayLength<u8>,
-        UrcCapacity: ArrayLength<Vec<u8, BufLen>>,
-    {
+        atat::IngressManager<DefaultDigester, DefaultUrcMatcher, BUF_LEN, URC_CAPACITY>,
+    ) {
         let config = atat::Config::new(atat::Mode::Blocking);
         let (client, ingress) = ClientBuilder::new(serial_tx, timer, config).build(queues);
         (Self { client }, ingress)
     }
 
     /// Send a raw command to the device.
-    pub fn send_command<T>(&mut self, command: &T) -> EspResult<T::Response, T::Error>
+    pub fn send_command<T, const LEN: usize>(
+        &mut self,
+        command: &T,
+    ) -> EspResult<T::Response, T::Error>
     where
-        T: atat::AtatCmd,
+        T: atat::AtatCmd<LEN>,
     {
         self.client.send(command)
     }
@@ -111,8 +107,8 @@ where
     /// Join the specified access point.
     pub fn join_access_point(
         &mut self,
-        ssid: impl Into<String<heapless::consts::U32>>,
-        psk: impl Into<String<heapless::consts::U64>>,
+        ssid: impl Into<String<32>>,
+        psk: impl Into<String<64>>,
         persist: bool,
     ) -> EspResult<responses::JoinResponse, GenericError> {
         self.client

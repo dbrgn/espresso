@@ -19,12 +19,11 @@ use crate::types;
 #[derive(Debug)]
 pub struct At;
 
-impl AtatCmd for At {
-    type CommandLen = heapless::consts::U4;
+impl AtatCmd<4> for At {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 4> {
         Vec::from_slice(b"AT\r\n").unwrap()
     }
 
@@ -45,12 +44,11 @@ impl AtatCmd for At {
 #[derive(Debug)]
 pub struct GetFirmwareVersion;
 
-impl AtatCmd for GetFirmwareVersion {
-    type CommandLen = heapless::consts::U8;
+impl AtatCmd<8> for GetFirmwareVersion {
     type Response = responses::FirmwareVersion;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 8> {
         Vec::from_slice(b"AT+GMR\r\n").unwrap()
     }
 
@@ -91,12 +89,11 @@ impl AtatCmd for GetFirmwareVersion {
 #[derive(Debug)]
 pub struct Restart;
 
-impl AtatCmd for Restart {
-    type CommandLen = heapless::consts::U8;
+impl AtatCmd<8> for Restart {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 8> {
         Vec::from_slice(b"AT+RST\r\n").unwrap()
     }
 
@@ -114,12 +111,11 @@ impl AtatCmd for Restart {
 #[derive(Debug)]
 pub struct GetCurrentWifiMode;
 
-impl AtatCmd for GetCurrentWifiMode {
-    type CommandLen = heapless::consts::U16;
+impl AtatCmd<16> for GetCurrentWifiMode {
     type Response = types::WifiMode;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 16> {
         Vec::from_slice(b"AT+CWMODE_CUR?\r\n").unwrap()
     }
 
@@ -143,12 +139,11 @@ impl AtatCmd for GetCurrentWifiMode {
 #[derive(Debug)]
 pub struct GetDefaultWifiMode;
 
-impl AtatCmd for GetDefaultWifiMode {
-    type CommandLen = heapless::consts::U16;
+impl AtatCmd<16> for GetDefaultWifiMode {
     type Response = types::WifiMode;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 16> {
         Vec::from_slice(b"AT+CWMODE_DEF?\r\n").unwrap()
     }
 
@@ -182,13 +177,12 @@ impl SetWifiMode {
     }
 }
 
-impl AtatCmd for SetWifiMode {
-    type CommandLen = heapless::consts::U17;
+impl AtatCmd<17> for SetWifiMode {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
-        let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
+    fn as_bytes(&self) -> Vec<u8, 17> {
+        let mut buf: Vec<u8, 17> = Vec::new();
         let persist_str = if self.persist { "DEF" } else { "CUR" };
         write!(
             buf,
@@ -215,12 +209,12 @@ impl AtatCmd for SetWifiMode {
 #[derive(Debug)]
 pub struct ListAccessPoints;
 
-impl AtatCmd for ListAccessPoints {
-    type CommandLen = heapless::consts::U10;
+impl AtatCmd<10> for ListAccessPoints {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 10_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 10> {
         Vec::from_slice(b"AT+CWLAP\r\n").unwrap()
     }
 
@@ -228,10 +222,6 @@ impl AtatCmd for ListAccessPoints {
         // println!("Parse: {:?}", resp);
         // TODO: This currently overflows
         Ok(responses::EmptyResponse)
-    }
-
-    fn max_timeout_ms(&self) -> u32 {
-        10_000
     }
 }
 
@@ -241,17 +231,13 @@ impl AtatCmd for ListAccessPoints {
 /// flash.
 #[derive(Debug)]
 pub struct JoinAccessPoint {
-    ssid: String<heapless::consts::U32>,
-    psk: String<heapless::consts::U64>,
+    ssid: String<32>,
+    psk: String<64>,
     persist: bool,
 }
 
 impl JoinAccessPoint {
-    pub fn new(
-        ssid: impl Into<String<heapless::consts::U32>>,
-        psk: impl Into<String<heapless::consts::U64>>,
-        persist: bool,
-    ) -> Self {
+    pub fn new(ssid: impl Into<String<32>>, psk: impl Into<String<64>>, persist: bool) -> Self {
         Self {
             ssid: ssid.into(),
             psk: psk.into(),
@@ -260,13 +246,13 @@ impl JoinAccessPoint {
     }
 }
 
-impl AtatCmd for JoinAccessPoint {
-    type CommandLen = heapless::consts::U116;
+impl AtatCmd<116> for JoinAccessPoint {
     type Response = responses::JoinResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 25_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
-        let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
+    fn as_bytes(&self) -> Vec<u8, 116> {
+        let mut buf: Vec<u8, 116> = Vec::new();
         let persist_str = if self.persist { "DEF" } else { "CUR" };
         // TODO: Proper quoting
         write!(
@@ -296,23 +282,17 @@ impl AtatCmd for JoinAccessPoint {
         }
         Ok(response)
     }
-
-    fn max_timeout_ms(&self) -> u32 {
-        // From experiments, it seems that a timeout is returned after ~15s
-        25_000
-    }
 }
 
 /// Query information about current connection.
 #[derive(Debug)]
 pub struct GetConnectionStatus;
 
-impl AtatCmd for GetConnectionStatus {
-    type CommandLen = heapless::consts::U14;
+impl AtatCmd<14> for GetConnectionStatus {
     type Response = types::ConnectionStatus;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 14> {
         Vec::from_slice(b"AT+CIPSTATUS\r\n").unwrap()
     }
 
@@ -338,12 +318,11 @@ impl AtatCmd for GetConnectionStatus {
 #[derive(Debug)]
 pub struct GetLocalAddress;
 
-impl AtatCmd for GetLocalAddress {
-    type CommandLen = heapless::consts::U10;
+impl AtatCmd<10> for GetLocalAddress {
     type Response = responses::LocalAddress;
     type Error = GenericError;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 10> {
         Vec::from_slice(b"AT+CIFSR\r\n").unwrap()
     }
 
@@ -397,15 +376,15 @@ impl EstablishConnection {
     }
 }
 
-impl AtatCmd for EstablishConnection {
-    type CommandLen = heapless::consts::U42;
+impl AtatCmd<42> for EstablishConnection {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 30_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, 42> {
         // Single: AT+CIPSTART=<type>,<remote IP>,<remote port>[,<TCP keep alive>]
         // Multiple: AT+CIPSTART=<link ID>,<type>,<remote IP>,<remote port>[,<TCP keep alive>]
-        let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
+        let mut buf: Vec<u8, 42> = Vec::new();
         write!(buf, "AT+CIPSTART=").unwrap();
         if let types::MultiplexingType::Multiplexed(ref id) = self.mux {
             write!(buf, "{},", id.as_at_str()).unwrap();
@@ -435,10 +414,6 @@ impl AtatCmd for EstablishConnection {
     fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
     }
-
-    fn max_timeout_ms(&self) -> u32 {
-        30_000
-    }
 }
 
 /// Prepare to send `length` bytes of data.
@@ -456,13 +431,13 @@ impl PrepareSendData {
     }
 }
 
-impl AtatCmd for PrepareSendData {
-    type CommandLen = heapless::consts::U20;
+impl AtatCmd<20> for PrepareSendData {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 5_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
-        let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
+    fn as_bytes(&self) -> Vec<u8, 20> {
+        let mut buf: Vec<u8, 20> = Vec::new();
         write!(buf, "AT+CIPSEND=").unwrap();
         if let types::MultiplexingType::Multiplexed(ref id) = self.mux {
             write!(buf, "{},", id.as_at_str()).unwrap();
@@ -478,10 +453,6 @@ impl AtatCmd for PrepareSendData {
     fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
     }
-
-    fn max_timeout_ms(&self) -> u32 {
-        5_000
-    }
 }
 
 /// Send data.
@@ -490,42 +461,28 @@ impl AtatCmd for PrepareSendData {
 ///
 /// The type argument `L` must be at least as large as the data length.
 #[derive(Debug)]
-pub struct SendData<'a, L> {
+pub struct SendData<'a, const L: usize> {
     data: &'a str,
-    length: core::marker::PhantomData<L>,
 }
 
-impl<'a, L> SendData<'a, L>
-where
-    L: heapless::ArrayLength<u8>,
-{
+impl<'a, const L: usize> SendData<'a, L> {
     pub fn new(data: &'a str) -> Self {
-        Self {
-            data,
-            length: core::marker::PhantomData,
-        }
+        Self { data }
     }
 }
 
-impl<'a, L> AtatCmd for SendData<'a, L>
-where
-    L: heapless::ArrayLength<u8>,
-{
-    type CommandLen = L;
+impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 30_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
+    fn as_bytes(&self) -> Vec<u8, L> {
         Vec::from_slice(self.data.as_bytes()).unwrap()
     }
 
     fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
         // println!("Parse: {:?}", resp);
         Ok(responses::EmptyResponse)
-    }
-
-    fn max_timeout_ms(&self) -> u32 {
-        30_000
     }
 }
 
@@ -541,13 +498,13 @@ impl CloseConnection {
     }
 }
 
-impl AtatCmd for CloseConnection {
-    type CommandLen = heapless::consts::U15;
+impl AtatCmd<15> for CloseConnection {
     type Response = responses::EmptyResponse;
     type Error = GenericError;
+    const MAX_TIMEOUT_MS: u32 = 5_000;
 
-    fn as_bytes(&self) -> Vec<u8, Self::CommandLen> {
-        let mut buf: Vec<u8, Self::CommandLen> = Vec::new();
+    fn as_bytes(&self) -> Vec<u8, 15> {
+        let mut buf: Vec<u8, 15> = Vec::new();
         write!(buf, "AT+CIPCLOSE").unwrap();
         if let types::MultiplexingType::Multiplexed(ref id) = self.mux {
             write!(buf, "={}", id.as_at_str()).unwrap();
@@ -558,9 +515,5 @@ impl AtatCmd for CloseConnection {
 
     fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
-    }
-
-    fn max_timeout_ms(&self) -> u32 {
-        5_000
     }
 }
