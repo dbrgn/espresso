@@ -1,11 +1,11 @@
 //! Raw requests that can be sent from the driver to the ESP8266 device.
 
+use core::fmt::Write;
+
 use atat::{AtatCmd, Error, GenericError, InternalError};
 use heapless::{String, Vec};
 use no_std_net::SocketAddr;
 use numtoa::NumToA;
-
-use core::fmt::Write;
 
 use crate::commands::responses;
 use crate::types;
