@@ -17,17 +17,21 @@ use types::ConfigWithDefault;
 pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
 
 /// An ESP8266 client.
-pub struct EspClient<TX, TIMER, const BUF_LEN: usize, const URC_CAPACITY: usize>
-where
+pub struct EspClient<
+    TX,
+    TIMER,
+    const RES_CAPACITY: usize,
+    const URC_CAPACITY: usize,
+> where
     TX: serial::Write<u8>,
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
 {
-    client: atat::Client<TX, TIMER, BUF_LEN, URC_CAPACITY>,
+    client: atat::Client<TX, TIMER, RES_CAPACITY, URC_CAPACITY>,
 }
 
-impl<TX, TIMER, const BUF_LEN: usize, const URC_CAPACITY: usize>
-    EspClient<TX, TIMER, BUF_LEN, URC_CAPACITY>
+impl<TX, TIMER, const RES_CAPACITY: usize, const URC_CAPACITY: usize>
+    EspClient<TX, TIMER, RES_CAPACITY, URC_CAPACITY>
 where
     TX: serial::Write<u8>,
     TIMER: timer::CountDown,
@@ -42,10 +46,16 @@ where
     pub fn new(
         serial_tx: TX,
         timer: TIMER,
-        queues: Queues<BUF_LEN, URC_CAPACITY>,
+        queues: Queues<RES_CAPACITY, URC_CAPACITY>,
     ) -> (
         Self,
-        atat::IngressManager<DefaultDigester, DefaultUrcMatcher, BUF_LEN, URC_CAPACITY>,
+        atat::IngressManager<
+            DefaultDigester,
+            DefaultUrcMatcher,
+            6000, // BUF_LEN: Number of incoming bytes that can be handled
+            RES_CAPACITY,
+            URC_CAPACITY,
+        >,
     ) {
         let config = atat::Config::new(atat::Mode::Blocking);
         let (client, ingress) = ClientBuilder::new(serial_tx, timer, config).build(queues);

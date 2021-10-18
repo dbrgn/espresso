@@ -1,12 +1,10 @@
-use std::convert::TryInto;
-use std::env;
-use std::io;
-use std::thread;
-use std::time::Duration;
+use std::{convert::TryInto, env, io, thread, time::Duration};
 
-use atat::{ComQueue, Queues, ResQueue, UrcQueue};
-use espresso::commands::requests;
-use espresso::types::{ConnectionStatus, MultiplexingType, WifiMode};
+use atat::{bbqueue::BBBuffer, ComQueue, Queues};
+use espresso::{
+    commands::requests,
+    types::{ConnectionStatus, MultiplexingType, WifiMode},
+};
 use heapless::spsc::Queue;
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
@@ -50,16 +48,14 @@ fn main() {
     let mut serial_rx = serial_tx.try_clone().expect("Could not clone serial port");
 
     // Initialize
-    static mut RES_QUEUE: ResQueue<256> = Queue::new();
-    static mut URC_QUEUE: UrcQueue<256, 10> = Queue::new();
+    static mut RES_QUEUE: BBBuffer<1024> = BBBuffer::new();
+    static mut URC_QUEUE: BBBuffer<512> = BBBuffer::new();
     static mut COM_QUEUE: ComQueue = Queue::new();
-
     let queues = Queues {
-        res_queue: unsafe { RES_QUEUE.split() },
-        urc_queue: unsafe { URC_QUEUE.split() },
+        res_queue: unsafe { RES_QUEUE.try_split_framed().unwrap() },
+        urc_queue: unsafe { URC_QUEUE.try_split_framed().unwrap() },
         com_queue: unsafe { COM_QUEUE.split() },
     };
-
     let timer = timer::SysTimer::new();
     let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer, queues);
 

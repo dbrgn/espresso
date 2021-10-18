@@ -29,7 +29,7 @@ impl AtatCmd<4> for At {
 
     fn parse(
         &self,
-        resp: Result<&[u8], &InternalError>,
+        resp: Result<&[u8], InternalError>,
     ) -> Result<Self::Response, Error<Self::Error>> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.trim().is_empty() {
@@ -52,7 +52,7 @@ impl AtatCmd<8> for GetFirmwareVersion {
         Vec::from_slice(b"AT+GMR\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         let mut lines = resp.lines();
 
@@ -97,7 +97,7 @@ impl AtatCmd<8> for Restart {
         Vec::from_slice(b"AT+RST\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.trim().is_empty() {
             Err(atat::Error::InvalidResponse)
@@ -119,7 +119,7 @@ impl AtatCmd<16> for GetCurrentWifiMode {
         Vec::from_slice(b"AT+CWMODE_CUR?\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.starts_with("+CWMODE_CUR:") {
             return Err(atat::Error::InvalidResponse);
@@ -147,7 +147,7 @@ impl AtatCmd<16> for GetDefaultWifiMode {
         Vec::from_slice(b"AT+CWMODE_DEF?\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.starts_with("+CWMODE_DEF:") {
             return Err(atat::Error::InvalidResponse);
@@ -194,7 +194,7 @@ impl AtatCmd<17> for SetWifiMode {
         buf
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         // TODO: This code is used a lot, move it into helper function
         if !resp.trim().is_empty() {
@@ -218,7 +218,7 @@ impl AtatCmd<10> for ListAccessPoints {
         Vec::from_slice(b"AT+CWLAP\r\n").unwrap()
     }
 
-    fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         // println!("Parse: {:?}", resp);
         // TODO: This currently overflows
         Ok(responses::EmptyResponse)
@@ -266,7 +266,7 @@ impl AtatCmd<116> for JoinAccessPoint {
         buf
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         let mut response = responses::JoinResponse {
             connected: false,
@@ -296,7 +296,7 @@ impl AtatCmd<14> for GetConnectionStatus {
         Vec::from_slice(b"AT+CIPSTATUS\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         if !resp.starts_with("STATUS:") {
             return Err(atat::Error::InvalidResponse);
@@ -326,7 +326,7 @@ impl AtatCmd<10> for GetLocalAddress {
         Vec::from_slice(b"AT+CIFSR\r\n").unwrap()
     }
 
-    fn parse(&self, resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         let resp = core::str::from_utf8(resp?).unwrap();
         // Example: +CIFSR:STAIP,"10.0.99.164"\r\n+CIFSR:STAMAC,"dc:4f:22:7e:41:b4"
         let mut mac = None;
@@ -411,7 +411,7 @@ impl AtatCmd<42> for EstablishConnection {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
     }
 }
@@ -450,7 +450,7 @@ impl AtatCmd<20> for PrepareSendData {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
     }
 }
@@ -480,7 +480,7 @@ impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
         Vec::from_slice(self.data.as_bytes()).unwrap()
     }
 
-    fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         // println!("Parse: {:?}", resp);
         Ok(responses::EmptyResponse)
     }
@@ -513,7 +513,7 @@ impl AtatCmd<15> for CloseConnection {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], &InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         Ok(responses::EmptyResponse)
     }
 }
