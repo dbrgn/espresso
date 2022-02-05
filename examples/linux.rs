@@ -23,6 +23,8 @@ fn main() {
             "Example: {} /dev/ttyUSB0 115200 mywifi hellopasswd123",
             args[0]
         );
+        println!("\nNote: To run the example with debug logging, run it like this:");
+        println!("\n  RUST_LOG=trace cargo run --example linux --features \"atat/log\" -- /dev/ttyUSB0 115200 mywifi hellopasswd123");
         std::process::exit(1);
     }
     let dev = &args[1];

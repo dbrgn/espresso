@@ -25,4 +25,3 @@ void = "1"
 
 [[example]]
 name = "linux"
-features = "atat/log"
