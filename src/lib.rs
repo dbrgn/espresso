@@ -17,12 +17,8 @@ use types::ConfigWithDefault;
 pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
 
 /// An ESP8266 client.
-pub struct EspClient<
-    TX,
-    TIMER,
-    const RES_CAPACITY: usize,
-    const URC_CAPACITY: usize,
-> where
+pub struct EspClient<TX, TIMER, const RES_CAPACITY: usize, const URC_CAPACITY: usize>
+where
     TX: serial::Write<u8>,
     TIMER: timer::CountDown,
     TIMER::Time: From<u32>,
