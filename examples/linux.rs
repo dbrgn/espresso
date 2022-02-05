@@ -89,7 +89,10 @@ fn main() {
     let version = client
         .get_firmware_version()
         .expect("Could not get firmware version");
-    println!("{:?}", version);
+    println!("Firmware version:");
+    println!("  AT version: {}", version.at_version);
+    println!("  SDK version: {}", version.sdk_version);
+    println!("  Compile time: {}", version.compile_time);
 
     // Show current config
     let wifi_mode = client.get_wifi_mode().expect("Could not get wifi mode");
