@@ -7,8 +7,7 @@ use heapless::{String, Vec};
 use no_std_net::SocketAddr;
 use numtoa::NumToA;
 
-use crate::commands::responses;
-use crate::types;
+use crate::{commands::responses, types};
 
 /// An AT test command.
 ///
@@ -31,12 +30,7 @@ impl AtatCmd<4> for At {
         &self,
         resp: Result<&[u8], InternalError>,
     ) -> Result<Self::Response, Error<Self::Error>> {
-        let resp = core::str::from_utf8(resp?).unwrap();
-        if !resp.trim().is_empty() {
-            Err(atat::Error::InvalidResponse)
-        } else {
-            Ok(responses::EmptyResponse)
-        }
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -98,12 +92,7 @@ impl AtatCmd<8> for Restart {
     }
 
     fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        let resp = core::str::from_utf8(resp?).unwrap();
-        if !resp.trim().is_empty() {
-            Err(atat::Error::InvalidResponse)
-        } else {
-            Ok(responses::EmptyResponse)
-        }
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -195,13 +184,7 @@ impl AtatCmd<17> for SetWifiMode {
     }
 
     fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        let resp = core::str::from_utf8(resp?).unwrap();
-        // TODO: This code is used a lot, move it into helper function
-        if !resp.trim().is_empty() {
-            Err(atat::Error::InvalidResponse)
-        } else {
-            Ok(responses::EmptyResponse)
-        }
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -218,10 +201,9 @@ impl AtatCmd<10> for ListAccessPoints {
         Vec::from_slice(b"AT+CWLAP\r\n").unwrap()
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        // println!("Parse: {:?}", resp);
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
         // TODO: This currently overflows
-        Ok(responses::EmptyResponse)
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -411,8 +393,8 @@ impl AtatCmd<42> for EstablishConnection {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        Ok(responses::EmptyResponse)
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -450,8 +432,8 @@ impl AtatCmd<20> for PrepareSendData {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        Ok(responses::EmptyResponse)
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -480,9 +462,8 @@ impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
         Vec::from_slice(self.data.as_bytes()).unwrap()
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        // println!("Parse: {:?}", resp);
-        Ok(responses::EmptyResponse)
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
     }
 }
 
@@ -513,7 +494,7 @@ impl AtatCmd<15> for CloseConnection {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        Ok(responses::EmptyResponse)
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
     }
 }

@@ -1,6 +1,6 @@
 //! Responses from the ESP8266 device.
 
-use atat::AtatResp;
+use atat::{AtatResp, Error, GenericError, InternalError};
 use heapless::String;
 use no_std_net::Ipv4Addr;
 
@@ -11,6 +11,19 @@ use crate::types;
 pub struct EmptyResponse;
 
 impl AtatResp for EmptyResponse {}
+
+impl EmptyResponse {
+    pub(crate) fn from_resp(
+        resp: Result<&[u8], InternalError>,
+    ) -> Result<Self, Error<GenericError>> {
+        let bytes = resp?;
+        if !bytes.is_empty() {
+            Err(atat::Error::InvalidResponse)
+        } else {
+            Ok(Self)
+        }
+    }
+}
 
 /// Firmware version.
 #[derive(Debug)]
