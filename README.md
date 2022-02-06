@@ -10,6 +10,20 @@ AT based driver crate for ESP8266 WiFi modules.
 This is still very much work in progress.
 
 
+## Supported Firmware Versions
+
+This driver is being developed for the following firmware version:
+
+    AT+GMR
+    AT version:1.7.5.0(Oct 20 2021 19:14:04)
+    SDK version:3.0.5(b29dcd3)
+    compile time:Oct 20 2021 20:13:50
+    Bin version(Wroom 02):1.7.5
+
+You can update your ESP8266 module over WiFi using the "AT+CIUPDATE"
+command.
+
+
 ## Resources
 
 - [ESP8266 AT Instruction Set](https://www.espressif.com/sites/default/files/documentation/4a-esp8266_at_instruction_set_en.pdf)
