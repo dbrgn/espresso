@@ -2,9 +2,10 @@
 
 #![no_std]
 
-use atat::{AtatClient, ClientBuilder, DefaultDigester, DefaultUrcMatcher, GenericError, Queues};
+use atat::{
+    AtatClient, ClientBuilder, Clock, DefaultDigester, DefaultUrcMatcher, GenericError, Queues,
+};
 use embedded_hal::serial;
-use embedded_hal::timer;
 use heapless::String;
 
 pub mod commands;
@@ -17,21 +18,24 @@ use types::ConfigWithDefault;
 pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
 
 /// An ESP8266 client.
-pub struct EspClient<TX, TIMER, const RES_CAPACITY: usize, const URC_CAPACITY: usize>
-where
-    TX: serial::Write<u8>,
-    TIMER: timer::CountDown,
-    TIMER::Time: From<u32>,
+pub struct EspClient<
+    TX,
+    CLK,
+    const TIMER_HZ: u32,
+    const RES_CAPACITY: usize,
+    const URC_CAPACITY: usize,
+> where
+    TX: serial::nb::Write<u8>,
+    CLK: Clock<TIMER_HZ>,
 {
-    client: atat::Client<TX, TIMER, RES_CAPACITY, URC_CAPACITY>,
+    client: atat::Client<TX, CLK, TIMER_HZ, RES_CAPACITY, URC_CAPACITY>,
 }
 
-impl<TX, TIMER, const RES_CAPACITY: usize, const URC_CAPACITY: usize>
-    EspClient<TX, TIMER, RES_CAPACITY, URC_CAPACITY>
+impl<TX, CLK, const TIMER_HZ: u32, const RES_CAPACITY: usize, const URC_CAPACITY: usize>
+    EspClient<TX, CLK, TIMER_HZ, RES_CAPACITY, URC_CAPACITY>
 where
-    TX: serial::Write<u8>,
-    TIMER: timer::CountDown,
-    TIMER::Time: From<u32>,
+    TX: serial::nb::Write<u8>,
+    CLK: Clock<TIMER_HZ>,
 {
     /// Create a new ESP8266 client.
     ///
@@ -41,7 +45,7 @@ where
     /// [IngressManager]: ../atat/istruct.IngressManager.html
     pub fn new(
         serial_tx: TX,
-        timer: TIMER,
+        timer: CLK,
         queues: Queues<RES_CAPACITY, URC_CAPACITY>,
     ) -> (
         Self,

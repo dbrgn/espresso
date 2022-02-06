@@ -7,7 +7,7 @@ use espresso::{
 };
 use heapless::spsc::Queue;
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
+use serialport::{DataBits, FlowControl, Parity, StopBits};
 
 fn main() {
     env_logger::init();
@@ -32,19 +32,15 @@ fn main() {
 
     println!("Starting (dev={}, baud={:?})…", dev, baud_rate);
 
-    // Serial port settings
-    let settings = SerialPortSettings {
-        baud_rate,
-        data_bits: DataBits::Eight,
-        flow_control: FlowControl::None,
-        parity: Parity::None,
-        stop_bits: StopBits::One,
-        timeout: Duration::from_millis(5000),
-    };
-
     // Open serial port
-    let serial_tx =
-        serialport::open_with_settings(dev, &settings).expect("Could not open serial port");
+    let serial_tx = serialport::new(dev, baud_rate)
+        .data_bits(DataBits::Eight)
+        .flow_control(FlowControl::None)
+        .parity(Parity::None)
+        .stop_bits(StopBits::One)
+        .timeout(Duration::from_millis(5000))
+        .open()
+        .expect("Could not open serial port");
     let mut serial_rx = serial_tx.try_clone().expect("Could not clone serial port");
 
     // Initialize
@@ -179,50 +175,75 @@ fn main() {
 }
 
 mod timer {
-    use std::time::{Duration, Instant};
+    use std::{convert::TryInto, time::Instant as StdInstant};
 
-    use embedded_hal::timer::{CountDown, Periodic};
+    use atat::Clock;
+    use fugit::Instant;
 
-    /// A timer with milliseconds as unit of time.
+    /// A timer with millisecond precision.
     pub struct SysTimer {
-        start: Instant,
+        start: StdInstant,
         duration_ms: u32,
+        started: bool,
     }
 
     impl SysTimer {
         pub fn new() -> SysTimer {
             SysTimer {
-                start: Instant::now(),
+                start: StdInstant::now(),
                 duration_ms: 0,
+                started: false,
             }
         }
     }
 
-    impl CountDown for SysTimer {
-        type Time = u32;
-        type Error = ();
+    impl Clock<1000> for SysTimer {
+        type Error = &'static str;
 
-        fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error>
-        where
-            T: Into<Self::Time>,
-        {
-            self.start = Instant::now();
-            self.duration_ms = count.into();
+        /// Return current time `Instant`
+        fn now(&mut self) -> fugit::TimerInstantU32<1000> {
+            let milliseconds = (StdInstant::now() - self.start).as_millis();
+            let ticks: u32 = milliseconds.try_into().expect("u32 timer overflow");
+            Instant::<u32, 1, 1000>::from_ticks(ticks)
+        }
+
+        /// Start timer with a `duration`
+        fn start(&mut self, duration: fugit::TimerDurationU32<1000>) -> Result<(), Self::Error> {
+            // (Re)set start and duration
+            self.start = StdInstant::now();
+            self.duration_ms = duration.ticks();
+
+            // Set started flag
+            self.started = true;
+
             Ok(())
         }
 
-        fn try_wait(&mut self) -> nb::Result<(), Self::Error> {
-            if (Instant::now() - self.start) > Duration::from_millis(self.duration_ms as u64) {
-                // Restart the timer to fulfil the contract by `Periodic`
-                self.start = Instant::now();
+        /// Tries to stop this timer.
+        ///
+        /// An error will be returned if the timer has already been canceled or was never started.
+        /// An error is also returned if the timer is not `Periodic` and has already expired.
+        fn cancel(&mut self) -> Result<(), Self::Error> {
+            if !self.started {
+                Err("cannot cancel stopped timer")
+            } else {
+                self.started = false;
+                Ok(())
+            }
+        }
+
+        /// Wait until timer `duration` has expired.
+        /// Must return `nb::Error::WouldBlock` if timer `duration` is not yet over.
+        /// Must return `OK(())` as soon as timer `duration` has expired.
+        fn wait(&mut self) -> nb::Result<(), Self::Error> {
+            let now = StdInstant::now();
+            if (now - self.start).as_millis() > self.duration_ms.into() {
                 Ok(())
             } else {
                 Err(nb::Error::WouldBlock)
             }
         }
     }
-
-    impl Periodic for SysTimer {}
 
     #[cfg(test)]
     mod tests {
@@ -231,10 +252,15 @@ mod timer {
         #[test]
         fn test_delay() {
             let mut timer = SysTimer::new();
-            let before = Instant::now();
-            timer.start(500u32);
+
+            // Wait 500 ms
+            let before = StdInstant::now();
+            timer
+                .start(fugit::Duration::<u32, 1, 1000>::from_ticks(500))
+                .unwrap();
             nb::block!(timer.wait()).unwrap();
-            let after = Instant::now();
+            let after = StdInstant::now();
+
             let duration_ms = (after - before).as_millis();
             assert!(duration_ms >= 500);
             assert!(duration_ms < 1000);
