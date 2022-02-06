@@ -14,6 +14,9 @@ use crate::{commands::responses, types};
 /// You will get an [`EmptyResponse`][EmptyResponse] if communication works
 /// correctly.
 ///
+/// This command is special in that it will ignore any bytes in the response.
+/// This means that an AT command can be used to clear the buffer.
+///
 /// [EmptyResponse]: ../responses/struct.EmptyResponse.html
 #[derive(Debug)]
 pub struct At;
@@ -30,7 +33,8 @@ impl AtatCmd<4> for At {
         &self,
         resp: Result<&[u8], InternalError>,
     ) -> Result<Self::Response, Error<Self::Error>> {
-        responses::EmptyResponse::from_resp(resp)
+        let _ = resp?; // Ignore bytes
+        Ok(responses::EmptyResponse)
     }
 }
 
