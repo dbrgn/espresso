@@ -337,6 +337,9 @@ impl AtatCmd<10> for GetLocalAddress {
 }
 
 /// Establish TCP Connection, UDP Transmission or SSL Connection.
+///
+/// Note: The ESP8266 can also do DNS based requests, but that is not yet
+/// implemented.
 #[derive(Debug)]
 pub struct EstablishConnection {
     mux: types::MultiplexingType,
@@ -363,7 +366,7 @@ impl EstablishConnection {
 }
 
 impl AtatCmd<42> for EstablishConnection {
-    type Response = responses::EmptyResponse;
+    type Response = responses::ConnectResponse;
     type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 30_000;
 
@@ -398,7 +401,11 @@ impl AtatCmd<42> for EstablishConnection {
     }
 
     fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        responses::EmptyResponse::from_resp(resp)
+        match resp? {
+            b"CONNECT" => Ok(responses::ConnectResponse::Connected),
+            b"ALREADY CONNECTED" => Ok(responses::ConnectResponse::AlreadyConnected),
+            _ => Err(atat::Error::Parse),
+        }
     }
 }
 

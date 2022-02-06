@@ -61,3 +61,13 @@ pub struct LocalAddress {
 }
 
 impl AtatResp for LocalAddress {}
+
+#[derive(Debug, PartialEq)]
+pub enum ConnectResponse {
+    /// The connection was opened
+    Connected,
+    /// The connection is already open
+    AlreadyConnected,
+}
+
+impl AtatResp for ConnectResponse {}
