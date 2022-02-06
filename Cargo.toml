@@ -13,7 +13,7 @@ atat = "0.15"
 embedded-hal = "=1.0.0-alpha.6"
 heapless = "0.7"
 nb = "1"
-no-std-net = "0.3"
+no-std-net = "0.6"
 numtoa = "0.2"
 
 [dev-dependencies]
@@ -25,3 +25,4 @@ void = "1"
 
 [[example]]
 name = "linux"
+required-features = ["no-std-net/std"]

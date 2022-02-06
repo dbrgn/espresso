@@ -1,4 +1,4 @@
-use std::{convert::TryInto, env, io, thread, time::Duration};
+use std::{convert::TryInto, env, io, net::ToSocketAddrs, thread, time::Duration};
 
 use atat::{bbqueue::BBBuffer, ComQueue, Queues};
 use espresso::{
@@ -6,7 +6,6 @@ use espresso::{
     types::{ConnectionStatus, MultiplexingType, WifiMode},
 };
 use heapless::spsc::Queue;
-use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use serialport::{DataBits, FlowControl, Parity, StopBits};
 
 fn main() {
@@ -147,19 +146,24 @@ fn main() {
     );
 
     println!();
-    println!("Creating TCP connection to ipify.com…");
-    let remote_ip = Ipv4Addr::new(184, 73, 165, 106);
-    let remote_port = 80;
-    client
+    println!("Looking up IP for api.my-ip.io…");
+    let socket_addr = "api.my-ip.io:80"
+        .to_socket_addrs()
+        .unwrap()
+        .next()
+        .unwrap();
+    print!("Creating TCP connection to {}…", socket_addr);
+    let connect_response = client
         .send_command(&requests::EstablishConnection::tcp(
             MultiplexingType::NonMultiplexed,
-            SocketAddr::V4(SocketAddrV4::new(remote_ip, remote_port)),
+            socket_addr.into(),
         ))
         .expect("Could not establish a TCP connection");
+    println!(" {:?}", connect_response);
 
     println!();
     println!("Sending HTTP request…");
-    let data = "GET /?format=text HTTP/1.1\r\nHost: api.ipify.org\r\nUser-Agent: ESP8266\r\n\r\n";
+    let data = "GET /ip.txt HTTP/1.1\r\nHost: api.my-ip.io\r\nUser-Agent: ESP8266\r\n\r\n";
     client
         .send_command(&requests::PrepareSendData::new(
             MultiplexingType::NonMultiplexed,
