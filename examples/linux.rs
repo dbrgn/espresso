@@ -147,11 +147,7 @@ fn main() {
 
     println!();
     println!("Looking up IP for api.my-ip.io…");
-    let socket_addr = "api.my-ip.io:80"
-        .to_socket_addrs()
-        .unwrap()
-        .next()
-        .unwrap();
+    let socket_addr = "api.my-ip.io:80".to_socket_addrs().unwrap().next().unwrap();
     print!("Creating TCP connection to {}…", socket_addr);
     let connect_response = client
         .send_command(&requests::EstablishConnection::tcp(
@@ -160,6 +156,10 @@ fn main() {
         ))
         .expect("Could not establish a TCP connection");
     println!(" {:?}", connect_response);
+    println!("Setting passive TCP receive mode…");
+    client
+        .send_command(&requests::SetTcpReceiveMode::Passive)
+        .expect("Could not set TCP receive mode");
 
     println!();
     println!("Sending HTTP request…");
@@ -170,9 +170,11 @@ fn main() {
             data.len().try_into().unwrap(),
         ))
         .expect("Could not prepare sending data");
+    println!(" [1/2] Prepared sending data");
     client
         .send_command(&requests::SendData::<72>::new(&data))
         .expect("Could not send data");
+    println!(" [2/2] Sent data");
     client
         .send_command(&requests::CloseConnection::new(
             MultiplexingType::NonMultiplexed,

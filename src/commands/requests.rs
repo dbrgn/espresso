@@ -336,6 +336,43 @@ impl AtatCmd<10> for GetLocalAddress {
     }
 }
 
+#[derive(Debug)]
+pub enum SetTcpReceiveMode {
+    /// ESP8266 will send all the received TCP data instantly to host MCU
+    /// through UART with header "+IPD". this is the default mode.
+    ///
+    /// NOTE: Handling these responses is not supported by espresso!
+    Active,
+
+    /// ESP8266 will keep the received TCP data in an internal buffer (default
+    /// is 2920 bytes), and wait for host MCU to read the data. If the buffer
+    /// is full, the TCP transmission will be blocked.
+    Passive,
+}
+
+impl AtatCmd<18> for SetTcpReceiveMode {
+    type Response = responses::EmptyResponse;
+    type Error = GenericError;
+
+    fn as_bytes(&self) -> Vec<u8, 18> {
+        let mut buf: Vec<u8, 18> = Vec::new();
+        write!(
+            buf,
+            "AT+CIPRECVMODE={}\r\n",
+            match self {
+                Self::Active => "0",
+                Self::Passive => "1",
+            }
+        )
+        .unwrap();
+        buf
+    }
+
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
+    }
+}
+
 /// Establish TCP Connection, UDP Transmission or SSL Connection.
 ///
 /// Note: The ESP8266 can also do DNS based requests, but that is not yet
@@ -404,7 +441,7 @@ impl AtatCmd<42> for EstablishConnection {
         match resp? {
             b"CONNECT" => Ok(responses::ConnectResponse::Connected),
             b"ALREADY CONNECTED" => Ok(responses::ConnectResponse::AlreadyConnected),
-            _ => Err(atat::Error::Parse),
+            _ => Err(atat::Error::InvalidResponse),
         }
     }
 }
@@ -450,7 +487,7 @@ impl AtatCmd<20> for PrepareSendData {
 
 /// Send data.
 ///
-/// This message MUST directly follow by a `PrepareSendData` message.
+/// This message MUST directly follow a `PrepareSendData` message.
 ///
 /// The type argument `L` must be at least as large as the data length.
 #[derive(Debug)]
@@ -474,7 +511,17 @@ impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
     }
 
     fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        responses::EmptyResponse::from_resp(resp)
+        // The ESP will respond with something like "Recv 65 bytes".
+        // TODO: Complete parsing of result.
+        panic!("oh no");
+        assert_eq!(b"a", b"b");
+        let bytes = resp?;
+        assert_eq!(b"a", bytes);
+        if bytes.starts_with(b"\r\nRecv ") {
+            Ok(responses::EmptyResponse)
+        } else {
+            Err(atat::Error::InvalidResponse)
+        }
     }
 }
 
