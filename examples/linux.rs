@@ -1,4 +1,10 @@
-use std::{convert::TryInto, env, io, net::ToSocketAddrs, thread, time::Duration};
+use std::{
+    convert::TryInto,
+    env, io,
+    net::{SocketAddr, ToSocketAddrs},
+    thread,
+    time::Duration,
+};
 
 use atat::{bbqueue::BBBuffer, ComQueue, Queues};
 use espresso::{
@@ -150,6 +156,7 @@ fn main() {
     let socket_addr = "api.my-ip.io:80"
         .to_socket_addrs()
         .unwrap()
+        .filter(|addr| matches!(addr, SocketAddr::V4(_)))
         .next()
         .unwrap();
     print!("Creating TCP connection to {}…", socket_addr);
