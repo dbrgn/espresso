@@ -7,7 +7,7 @@ use espresso::{
 };
 use heapless::spsc::Queue;
 use no_std_net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use serialport::{DataBits, FlowControl, Parity, SerialPortSettings, StopBits};
+use serialport::{DataBits, FlowControl, Parity, StopBits};
 
 fn main() {
     env_logger::init();
@@ -32,19 +32,16 @@ fn main() {
 
     println!("Starting (dev={}, baud={:?})…", dev, baud_rate);
 
-    // Serial port settings
-    let settings = SerialPortSettings {
-        baud_rate,
-        data_bits: DataBits::Eight,
-        flow_control: FlowControl::None,
-        parity: Parity::None,
-        stop_bits: StopBits::One,
-        timeout: Duration::from_millis(5000),
-    };
-
     // Open serial port
     let serial_tx =
-        serialport::open_with_settings(dev, &settings).expect("Could not open serial port");
+        serialport::new(dev, baud_rate)
+        .stop_bits(StopBits::One)
+        .data_bits(DataBits::Eight)
+        .flow_control(FlowControl::None)
+        .parity(Parity::None)
+        .timeout(Duration::from_millis(5000))
+        .open()
+        .expect("Could not open serial port");
     let mut serial_rx = serial_tx.try_clone().expect("Could not clone serial port");
 
     // Initialize

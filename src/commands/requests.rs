@@ -7,8 +7,7 @@ use heapless::{String, Vec};
 use no_std_net::SocketAddr;
 use numtoa::NumToA;
 
-use crate::commands::responses;
-use crate::types;
+use crate::{commands::responses, types};
 
 /// An AT test command.
 ///
@@ -450,7 +449,8 @@ impl AtatCmd<20> for PrepareSendData {
         buf
     }
 
-    fn parse(&self, _resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        let _ = resp?;
         Ok(responses::EmptyResponse)
     }
 }
