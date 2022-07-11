@@ -20,7 +20,7 @@ numtoa = "0.2"
 env_logger = "0.6"
 fugit = "0.3"
 log = "0.4"
-serialport = { git = "https://gitlab.com/dbrgn/serialport-rs", branch = "embedded", features = ["embedded"], default_features = false }
+serialport = { git = "https://github.com/dbrgn/serialport-rs", branch = "embedded-hal-0.6", features = ["embedded"], default_features = false }
 void = "1"
 
 [[example]]
