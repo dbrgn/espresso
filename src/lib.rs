@@ -2,9 +2,7 @@
 
 #![no_std]
 
-use atat::{
-    AtatClient, ClientBuilder, Clock, DefaultDigester, DefaultUrcMatcher, GenericError, Queues,
-};
+use atat::{clock::Clock, digest::ParseError, AtatClient, ClientBuilder, DefaultDigester, Queues};
 use embedded_hal::serial;
 use heapless::String;
 
@@ -15,7 +13,16 @@ use commands::{requests, responses};
 use types::ConfigWithDefault;
 
 /// Type alias for a result that may return an ATAT error.
-pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
+pub type EspResult<T> = Result<T, nb::Error<atat::Error>>;
+
+/// URC parser
+pub enum UrcParser {}
+
+impl atat::Parser for UrcParser {
+    fn parse(_buf: &[u8]) -> Result<(&[u8], usize), ParseError> {
+        Err(ParseError::NoMatch)
+    }
+}
 
 /// An ESP8266 client.
 pub struct EspClient<
@@ -50,23 +57,21 @@ where
     ) -> (
         Self,
         atat::IngressManager<
-            DefaultDigester,
-            DefaultUrcMatcher,
+            DefaultDigester<UrcParser>,
             6000, // BUF_LEN: Number of incoming bytes that can be handled
             RES_CAPACITY,
             URC_CAPACITY,
         >,
     ) {
         let config = atat::Config::new(atat::Mode::Blocking);
-        let (client, ingress) = ClientBuilder::new(serial_tx, timer, config).build(queues);
+        let digester = DefaultDigester::new();
+        let (client, ingress) =
+            ClientBuilder::new(serial_tx, timer, digester, config).build(queues);
         (Self { client }, ingress)
     }
 
     /// Send a raw command to the device.
-    pub fn send_command<T, const LEN: usize>(
-        &mut self,
-        command: &T,
-    ) -> EspResult<T::Response, T::Error>
+    pub fn send_command<T, const LEN: usize>(&mut self, command: &T) -> EspResult<T::Response>
     where
         T: atat::AtatCmd<LEN>,
     {
@@ -74,29 +79,29 @@ where
     }
 
     /// Test whether the device is connected and able to communicate.
-    pub fn selftest(&mut self) -> EspResult<(), GenericError> {
+    pub fn selftest(&mut self) -> EspResult<()> {
         self.client
             .send(&requests::At)
             .map(|_: responses::EmptyResponse| ())
     }
 
     /// Query and return the firmware version.
-    pub fn get_firmware_version(&mut self) -> EspResult<responses::FirmwareVersion, GenericError> {
+    pub fn get_firmware_version(&mut self) -> EspResult<responses::FirmwareVersion> {
         self.client.send(&requests::GetFirmwareVersion)
     }
 
     /// Return the current WiFi mode.
-    pub fn get_current_wifi_mode(&mut self) -> EspResult<types::WifiMode, GenericError> {
+    pub fn get_current_wifi_mode(&mut self) -> EspResult<types::WifiMode> {
         self.client.send(&requests::GetCurrentWifiMode)
     }
 
     /// Return the default WiFi mode.
-    pub fn get_default_wifi_mode(&mut self) -> EspResult<types::WifiMode, GenericError> {
+    pub fn get_default_wifi_mode(&mut self) -> EspResult<types::WifiMode> {
         self.client.send(&requests::GetDefaultWifiMode)
     }
 
     /// Return the current and default WiFi mode.
-    pub fn get_wifi_mode(&mut self) -> EspResult<ConfigWithDefault<types::WifiMode>, GenericError> {
+    pub fn get_wifi_mode(&mut self) -> EspResult<ConfigWithDefault<types::WifiMode>> {
         Ok(ConfigWithDefault {
             current: self.client.send(&requests::GetCurrentWifiMode)?,
             default: self.client.send(&requests::GetDefaultWifiMode)?,
@@ -104,11 +109,7 @@ where
     }
 
     /// Set the WiFi mode.
-    pub fn set_wifi_mode(
-        &mut self,
-        mode: types::WifiMode,
-        persist: bool,
-    ) -> EspResult<(), GenericError> {
+    pub fn set_wifi_mode(&mut self, mode: types::WifiMode, persist: bool) -> EspResult<()> {
         self.client
             .send(&requests::SetWifiMode::to(mode, persist))
             .map(|_: responses::EmptyResponse| ())
@@ -120,18 +121,18 @@ where
         ssid: impl Into<String<32>>,
         psk: impl Into<String<64>>,
         persist: bool,
-    ) -> EspResult<responses::JoinResponse, GenericError> {
+    ) -> EspResult<responses::JoinResponse> {
         self.client
             .send(&requests::JoinAccessPoint::new(ssid, psk, persist))
     }
 
     /// Return the current connection status.
-    pub fn get_connection_status(&mut self) -> EspResult<types::ConnectionStatus, GenericError> {
+    pub fn get_connection_status(&mut self) -> EspResult<types::ConnectionStatus> {
         self.client.send(&requests::GetConnectionStatus)
     }
 
     /// Return the locally assigned IP and MAC address.
-    pub fn get_local_address(&mut self) -> EspResult<responses::LocalAddress, GenericError> {
+    pub fn get_local_address(&mut self) -> EspResult<responses::LocalAddress> {
         self.client.send(&requests::GetLocalAddress)
     }
 }

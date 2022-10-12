@@ -6,12 +6,11 @@ use std::{
     time::Duration,
 };
 
-use atat::{bbqueue::BBBuffer, ComQueue, Queues};
+use atat::{bbqueue::BBBuffer, Queues};
 use espresso::{
     commands::requests,
     types::{ConnectionStatus, MultiplexingType, WifiMode},
 };
-use heapless::spsc::Queue;
 use serialport::{DataBits, FlowControl, Parity, StopBits};
 
 fn main() {
@@ -53,11 +52,9 @@ fn main() {
     // Initialize
     static mut RES_QUEUE: BBBuffer<1024> = BBBuffer::new();
     static mut URC_QUEUE: BBBuffer<512> = BBBuffer::new();
-    static mut COM_QUEUE: ComQueue = Queue::new();
     let queues = Queues {
         res_queue: unsafe { RES_QUEUE.try_split_framed().unwrap() },
         urc_queue: unsafe { URC_QUEUE.try_split_framed().unwrap() },
-        com_queue: unsafe { COM_QUEUE.split() },
     };
     let timer = timer::SysTimer::new();
     let (mut client, mut ingress) = espresso::EspClient::new(serial_tx, timer, queues);
@@ -193,7 +190,7 @@ fn main() {
 mod timer {
     use std::{convert::TryInto, time::Instant as StdInstant};
 
-    use atat::Clock;
+    use atat::clock::Clock;
     use fugit::Instant;
 
     /// A timer with millisecond precision.

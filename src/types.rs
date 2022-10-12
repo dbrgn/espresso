@@ -30,7 +30,7 @@ pub struct ConfigWithDefault<T> {
 }
 
 /// The connection status.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConnectionStatus {
     /// The ESP8266 Station is connected to an AP and its IP is obtained
     ConnectedToAccessPoint,

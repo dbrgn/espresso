@@ -24,6 +24,14 @@ You can update your ESP8266 module over WiFi using the "AT+CIUPDATE"
 command.
 
 
+## Running the example (Linux)
+
+    # For logging
+    export RUST_LOG=trace
+
+    cargo run --example linux --features "atat/log, no-std-net/std" -- \
+        /dev/ttyUSB0 115200 mywifi hellopasswd123
+
 ## Resources
 
 - [ESP8266 AT Instruction Set](https://www.espressif.com/sites/default/files/documentation/4a-esp8266_at_instruction_set_en.pdf)

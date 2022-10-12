@@ -1,6 +1,6 @@
 //! Responses from the ESP8266 device.
 
-use atat::{AtatResp, Error, GenericError, InternalError};
+use atat::{AtatResp, Error, InternalError};
 use heapless::String;
 use no_std_net::Ipv4Addr;
 
@@ -13,9 +13,7 @@ pub struct EmptyResponse;
 impl AtatResp for EmptyResponse {}
 
 impl EmptyResponse {
-    pub(crate) fn from_resp(
-        resp: Result<&[u8], InternalError>,
-    ) -> Result<Self, Error<GenericError>> {
+    pub(crate) fn from_resp(resp: Result<&[u8], InternalError>) -> Result<Self, Error> {
         let bytes = resp?;
         if !bytes.is_empty() {
             Err(atat::Error::InvalidResponse)
@@ -62,7 +60,7 @@ pub struct LocalAddress {
 
 impl AtatResp for LocalAddress {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConnectResponse {
     /// The connection was opened
     Connected,

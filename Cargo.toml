@@ -9,7 +9,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-atat = "0.15"
+atat = "0.16"
 embedded-hal = "=1.0.0-alpha.6"
 heapless = "0.7"
 nb = "1"
