@@ -2,7 +2,7 @@
 
 use core::fmt::Write;
 
-use atat::{AtatCmd, Error, GenericError, InternalError};
+use atat::{AtatCmd, Error, InternalError};
 use heapless::{String, Vec};
 use no_std_net::SocketAddr;
 use numtoa::NumToA;
@@ -23,16 +23,12 @@ pub struct At;
 
 impl AtatCmd<4> for At {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 4> {
         Vec::from_slice(b"AT\r\n").unwrap()
     }
 
-    fn parse(
-        &self,
-        resp: Result<&[u8], InternalError>,
-    ) -> Result<Self::Response, Error<Self::Error>> {
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, Error> {
         let _ = resp?; // Ignore bytes
         Ok(responses::EmptyResponse)
     }
@@ -44,7 +40,6 @@ pub struct GetFirmwareVersion;
 
 impl AtatCmd<8> for GetFirmwareVersion {
     type Response = responses::FirmwareVersion;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 8> {
         Vec::from_slice(b"AT+GMR\r\n").unwrap()
@@ -89,7 +84,6 @@ pub struct Restart;
 
 impl AtatCmd<8> for Restart {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 8> {
         Vec::from_slice(b"AT+RST\r\n").unwrap()
@@ -106,7 +100,6 @@ pub struct GetCurrentWifiMode;
 
 impl AtatCmd<16> for GetCurrentWifiMode {
     type Response = types::WifiMode;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 16> {
         Vec::from_slice(b"AT+CWMODE_CUR?\r\n").unwrap()
@@ -134,7 +127,6 @@ pub struct GetDefaultWifiMode;
 
 impl AtatCmd<16> for GetDefaultWifiMode {
     type Response = types::WifiMode;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 16> {
         Vec::from_slice(b"AT+CWMODE_DEF?\r\n").unwrap()
@@ -172,7 +164,6 @@ impl SetWifiMode {
 
 impl AtatCmd<17> for SetWifiMode {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 17> {
         let mut buf: Vec<u8, 17> = Vec::new();
@@ -198,7 +189,6 @@ pub struct ListAccessPoints;
 
 impl AtatCmd<10> for ListAccessPoints {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 10_000;
 
     fn as_bytes(&self) -> Vec<u8, 10> {
@@ -234,7 +224,6 @@ impl JoinAccessPoint {
 
 impl AtatCmd<116> for JoinAccessPoint {
     type Response = responses::JoinResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 25_000;
 
     fn as_bytes(&self) -> Vec<u8, 116> {
@@ -276,7 +265,6 @@ pub struct GetConnectionStatus;
 
 impl AtatCmd<14> for GetConnectionStatus {
     type Response = types::ConnectionStatus;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 14> {
         Vec::from_slice(b"AT+CIPSTATUS\r\n").unwrap()
@@ -306,7 +294,6 @@ pub struct GetLocalAddress;
 
 impl AtatCmd<10> for GetLocalAddress {
     type Response = responses::LocalAddress;
-    type Error = GenericError;
 
     fn as_bytes(&self) -> Vec<u8, 10> {
         Vec::from_slice(b"AT+CIFSR\r\n").unwrap()
@@ -367,7 +354,6 @@ impl EstablishConnection {
 
 impl AtatCmd<42> for EstablishConnection {
     type Response = responses::ConnectResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 30_000;
 
     fn as_bytes(&self) -> Vec<u8, 42> {
@@ -426,7 +412,6 @@ impl PrepareSendData {
 
 impl AtatCmd<20> for PrepareSendData {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 5_000;
 
     fn as_bytes(&self) -> Vec<u8, 20> {
@@ -466,7 +451,6 @@ impl<'a, const L: usize> SendData<'a, L> {
 
 impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 30_000;
 
     fn as_bytes(&self) -> Vec<u8, L> {
@@ -492,7 +476,6 @@ impl CloseConnection {
 
 impl AtatCmd<15> for CloseConnection {
     type Response = responses::EmptyResponse;
-    type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 5_000;
 
     fn as_bytes(&self) -> Vec<u8, 15> {
