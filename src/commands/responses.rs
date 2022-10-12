@@ -71,3 +71,15 @@ pub enum ConnectResponse {
 }
 
 impl AtatResp for ConnectResponse {}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum SendDataResponse {
+    /// Data transmitted successfully
+    Ok,
+    /// Data transmission failed
+    Failed,
+    /// Connection not established or disrupted during transmission
+    Error,
+}
+
+impl AtatResp for SendDataResponse {}
