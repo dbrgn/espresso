@@ -465,7 +465,7 @@ impl<'a, const L: usize> SendData<'a, L> {
 }
 
 impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
-    type Response = responses::EmptyResponse;
+    type Response = responses::SendDataResponse;
     type Error = GenericError;
     const MAX_TIMEOUT_MS: u32 = 30_000;
 
@@ -474,7 +474,12 @@ impl<'a, const L: usize> AtatCmd<L> for SendData<'a, L> {
     }
 
     fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
-        responses::EmptyResponse::from_resp(resp)
+        match resp? {
+            b"\r\nSEND OK\r\n" => Ok(responses::SendDataResponse::Ok),
+            b"\r\nSEND FAIL\r\n" => Ok(responses::SendDataResponse::Failed),
+            b"\r\nERROR\r\n" => Ok(responses::SendDataResponse::Error),
+            _ => Err(atat::Error::Parse),
+        }
     }
 }
 
@@ -502,6 +507,35 @@ impl AtatCmd<15> for CloseConnection {
             write!(buf, "={}", id.as_at_str()).unwrap();
         }
         write!(buf, "\r\n").unwrap();
+        buf
+    }
+
+    fn parse(&self, resp: Result<&[u8], InternalError>) -> Result<Self::Response, atat::Error> {
+        responses::EmptyResponse::from_resp(resp)
+    }
+}
+
+/// Set TCP receive mode
+pub struct SetTcpReceiveMode(types::TcpReceiveMode);
+
+impl SetTcpReceiveMode {
+    pub fn to(mode: types::TcpReceiveMode) -> Self {
+        Self(mode)
+    }
+}
+
+impl AtatCmd<18> for SetTcpReceiveMode {
+    type Response = responses::EmptyResponse;
+    type Error = GenericError;
+
+    fn as_bytes(&self) -> Vec<u8, 18> {
+        let mut buf: Vec<u8, 18> = Vec::new();
+        write!(
+            buf,
+            "AT+CIPRECVMODE={}\r\n",
+            self.0.as_at_str()
+        )
+        .unwrap();
         buf
     }
 

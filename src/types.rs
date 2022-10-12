@@ -89,3 +89,24 @@ impl Protocol {
         }
     }
 }
+
+/// The TCP receive mode.
+#[derive(Debug)]
+pub enum TcpReceiveMode {
+    /// Active mode: ESP8266 will send all the received TCP data instantly to
+    /// host MCU through UART with header "+IPD".
+    Active,
+    /// Passive mode: ESP8266 will keep the received TCP data in an internal
+    /// buffer (default is 2920 bytes), and wait for host MCU to read the data.
+    /// If the buffer is full, the TCP transmission will be blocked.
+    Passive,
+}
+
+impl TcpReceiveMode {
+    pub(crate) fn as_at_str(&self) -> &'static str {
+        match self {
+            Self::Active => "0",
+            Self::Passive => "1",
+        }
+    }
+}

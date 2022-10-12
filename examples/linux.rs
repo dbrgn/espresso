@@ -1,6 +1,6 @@
 use std::{
     convert::TryInto,
-    env, io,
+    env, io::{self, Write},
     net::{SocketAddr, ToSocketAddrs},
     thread,
     time::Duration,
@@ -9,10 +9,14 @@ use std::{
 use atat::{bbqueue::BBBuffer, ComQueue, Queues};
 use espresso::{
     commands::requests,
-    types::{ConnectionStatus, MultiplexingType, WifiMode},
+    types::{ConnectionStatus, MultiplexingType, TcpReceiveMode, WifiMode},
 };
 use heapless::spsc::Queue;
 use serialport::{DataBits, FlowControl, Parity, StopBits};
+
+fn flush() {
+    io::stdout().flush().ok();
+}
 
 fn main() {
     env_logger::init();
@@ -88,7 +92,7 @@ fn main() {
         })
         .unwrap();
 
-    print!("Testing whether device is online… ");
+    print!("Testing whether device is online… "); flush();
     client.selftest().expect("Self test failed");
     println!("OK");
 
@@ -101,20 +105,27 @@ fn main() {
     println!("  SDK version: {}", version.sdk_version);
     println!("  Compile time: {}", version.compile_time);
 
-    // Show current config
+    // Use passive TCP receive mode
+    println!("\nEnable passive TCP receive mode…\n");
+    client
+        .set_tcp_receive_mode(TcpReceiveMode::Passive)
+        .expect("Could not set TCP receive mode to passive");
+
+    // Show current WiFi config
     let wifi_mode = client.get_wifi_mode().expect("Could not get wifi mode");
     println!(
         "Wifi mode:\n  Current: {:?}\n  Default: {:?}",
         wifi_mode.current, wifi_mode.default,
     );
 
-    println!();
-    print!("Setting current Wifi mode to Station… ");
+    // Use station mode
+    print!("Setting current Wifi mode to Station… "); flush();
     client
         .set_wifi_mode(WifiMode::Station, false)
         .expect("Could not set current wifi mode");
     println!("OK");
 
+    // Get connection status
     println!();
     let status = client
         .get_connection_status()
@@ -126,6 +137,7 @@ fn main() {
     println!("Local MAC: {}", local_addr.mac);
     println!("Local IP:  {:?}", local_addr.ip);
 
+    // Ensure we're connected
     match status {
         ConnectionStatus::ConnectedToAccessPoint | ConnectionStatus::TransmissionEnded => {
             println!("Already connected!");
@@ -151,15 +163,17 @@ fn main() {
             .ip
     );
 
+    // Send request to website
+
     println!();
-    println!("Looking up IP for api.my-ip.io…");
-    let socket_addr = "api.my-ip.io:80"
+    println!("Looking up IP via ifconfig.net…");
+    let socket_addr = "ifconfig.net:80"
         .to_socket_addrs()
         .unwrap()
         .filter(|addr| matches!(addr, SocketAddr::V4(_)))
         .next()
         .unwrap();
-    print!("Creating TCP connection to {}…", socket_addr);
+    print!("Creating TCP connection to {}…", socket_addr); flush();
     let connect_response = client
         .send_command(&requests::EstablishConnection::tcp(
             MultiplexingType::NonMultiplexed,
@@ -170,21 +184,25 @@ fn main() {
 
     println!();
     println!("Sending HTTP request…");
-    let data = "GET /ip.txt HTTP/1.1\r\nHost: api.my-ip.io\r\nUser-Agent: ESP8266\r\n\r\n";
+
+    let request = "GET / HTTP/1.1\r\nAccept: text/plain\r\nHost: ifconfig.net\r\n\r\n";
     client
         .send_command(&requests::PrepareSendData::new(
             MultiplexingType::NonMultiplexed,
-            data.len().try_into().unwrap(),
+            request.len().try_into().unwrap(),
         ))
-        .expect("Could not prepare sending data");
+        .expect("Could not prepare sending HTTP request data");
+    println!("  Sent PrepareSendData");
     client
-        .send_command(&requests::SendData::<72>::new(&data))
-        .expect("Could not send data");
+        .send_command(&requests::SendData::<72>::new(&request))
+        .expect("Could not send HTTP request");
+    println!("  Sent SendData");
     client
         .send_command(&requests::CloseConnection::new(
             MultiplexingType::NonMultiplexed,
         ))
         .expect("Could not close connection");
+    println!("  Sent CloseConnection");
 
     println!("\nStarting main loop, use Ctrl+C to abort…");
     loop {}

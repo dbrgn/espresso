@@ -12,7 +12,7 @@ pub mod commands;
 pub mod types;
 
 use commands::{requests, responses};
-use types::ConfigWithDefault;
+use types::{ConfigWithDefault, TcpReceiveMode};
 
 /// Type alias for a result that may return an ATAT error.
 pub type EspResult<T, E> = Result<T, nb::Error<atat::Error<E>>>;
@@ -133,5 +133,12 @@ where
     /// Return the locally assigned IP and MAC address.
     pub fn get_local_address(&mut self) -> EspResult<responses::LocalAddress, GenericError> {
         self.client.send(&requests::GetLocalAddress)
+    }
+
+    /// Set TCP Receive mode
+    pub fn set_tcp_receive_mode(&mut self, mode: TcpReceiveMode) -> EspResult<(), GenericError> {
+        self.client
+            .send(&requests::SetTcpReceiveMode::to(mode))
+            .map(|_: responses::EmptyResponse| ())
     }
 }
